@@ -1,9 +1,11 @@
 """
-Training of a PPO agent on the grid world
+Training of a PPO agent on the grid world.
 """
 
 import argparse
 import os
+import time
+import numpy as np
 
 from thesis.environments.grid import GridEnv
 
@@ -21,3 +23,10 @@ if __name__ == '__main__':
 
     # perform training
     obs = env.reset()
+
+    for i in range(10):
+        _, _, done, _ = env.step(np.random.choice(4))
+        env.render()
+
+        time.sleep(1)
+        if done: env.reset()
