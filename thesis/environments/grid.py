@@ -44,9 +44,6 @@ class GridEnv():
                 if t == setup['origin']: self.origins.append((r, c))
                 if t == setup['target']: self.targets.append((r, c))
 
-        print(self.world)
-        print('origin', self.origins)
-
     def step(self, action):
         """
         Advances the environment by one step.
@@ -107,6 +104,12 @@ class GridEnv():
         for t in self.origins: grid[t] = 0
         for t in self.targets: grid[t] = 3
         grid[tuple(self.position)] = 2
+
+        # insert reward signals into the graphics
+        for r, c in np.ndindex(grid.shape):
+            text = f'N({self.world[r, c, 0]}, {self.world[r, c, 1]})'
+            self.axes.text(c, r, text, ha='center', va='center')
+
         self.axes.matshow(grid)
 
         plt.draw()
