@@ -3,19 +3,20 @@ Grid world implementation following OpenAI standards.
 """
 
 import json
+import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-class GridEnv():
+class GridEnv(gym.Env):
     """
     Grid environment providing an interface for agent interaction.
     """
 
-    def __init__(self, grid_path):
+    def __init__(self, config):
         """
         Loads the environment configuration.
-        :param grid_path: The file path for the JSON file containing the environment definition.
+        :param config: The config dict provided throught the RLlib trainer.
         """
         self.origins = []
         self.targets = []
@@ -28,7 +29,7 @@ class GridEnv():
 
         # read the configuration from the provided file
         # file is not checked for validity
-        with open(grid_path) as file:
+        with open(config['grid_path']) as file:
             setup = json.loads(file.read().lower())
 
         # the world is defined as a list of strings
