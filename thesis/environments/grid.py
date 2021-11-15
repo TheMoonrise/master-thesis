@@ -45,6 +45,10 @@ class GridEnv(gym.Env):
                 if t == setup['origin']: self.origins.append((r, c))
                 if t == setup['target']: self.targets.append((r, c))
 
+        # define action and state spaces
+        self.action_space = gym.spaces.Discrete(4)
+        self.observation_space = gym.spaces.Discrete(self.world.size)
+
     def step(self, action):
         """
         Advances the environment by one step.
@@ -60,17 +64,14 @@ class GridEnv(gym.Env):
         delta_c = (2 - action) * (action % 2)
         delta_r = (1 - action) * ((action + 1) % 2)
 
-        position = self.position
-
         self.position = np.add(self.position, (delta_r, delta_c))
         self.position = np.clip(self.position, (0, 0), np.subtract(self.world.shape[:2], 1))
-        print('stepping', position, '>', self.position)
 
         normal = self.world[tuple(self.position)]
         reward = np.random.normal(normal[0], 0 if normal[1] == 0 else np.sqrt(normal[1]))
 
         if tuple(self.position) in self.targets: self.done = True
-        return self.state_number(self.position), reward, self.done, None
+        return self.state_number(self.position), reward, self.done, {}
 
     def reset(self):
         """
