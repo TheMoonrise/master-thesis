@@ -29,7 +29,7 @@ def training(grid_path, checkpoint_path, name, resume):
     }
 
     stop = {
-        "training_iteration": 50
+        "training_iteration": 25
     }
 
     # run the training using tune for hyperparameter tuning
