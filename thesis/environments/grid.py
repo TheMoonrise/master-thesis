@@ -46,8 +46,9 @@ class GridEnv(gym.Env):
                 if t == setup['target']: self.targets.append((r, c))
 
         # define action and state spaces
+        # divide world size by two because each tile has two value entries
         self.action_space = gym.spaces.Discrete(4)
-        self.observation_space = gym.spaces.Discrete(self.world.size)
+        self.observation_space = gym.spaces.Discrete(self.world.size // 2)
 
     def step(self, action):
         """
@@ -123,7 +124,7 @@ class GridEnv(gym.Env):
     def state_number(self, position):
         """
         Converts a position tuple into a unique state number.
-        :param position: The current position as tuple (x, y).
+        :param position: The current position as tuple (row, column).
         :return: The position as a single int.
         """
         return position[0] * self.world.shape[0] + position[1]

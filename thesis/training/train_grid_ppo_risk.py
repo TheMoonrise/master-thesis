@@ -10,26 +10,35 @@ import time
 
 import ray
 from ray import tune
+import torch
 
 from thesis.environments.grid import GridEnv
 from thesis.policies.ppo_risk_averse import risk_averse_trainer
+
+
+def train_config(grid_path):
+    config = {
+        'env': GridEnv,
+        'env_config': {
+            'grid_path': grid_path,
+        },
+        'use_gae': True,
+        'use_critic': True,
+        'num_workers': 0,
+        'framework': 'torch',
+    }
+
+    return config
 
 
 def training(grid_path, checkpoint_path, name, resume):
     ray.init()
 
     # define the configuration for the training
-    config = {
-        "env": GridEnv,
-        "env_config": {
-            "grid_path": grid_path,
-        },
-        "num_workers": 0,
-        "framework": 'torch',
-    }
+    config = train_config(grid_path)
 
     stop = {
-        "training_iteration": 25
+        'training_iteration': 150
     }
 
     # run the training using tune for hyperparameter tuning
@@ -44,37 +53,32 @@ def training(grid_path, checkpoint_path, name, resume):
 
 
 def validate(analysis, grid_path):
-    # perform some verification runs on the environment
-    trial = analysis.get_best_logdir('episode_reward_mean', 'max')
-    ckpnt = analysis.get_best_checkpoint(trial, 'training_iteration', 'max')
+    with torch.no_grad():
+        # perform some verification runs on the environment
+        trial = analysis.get_best_logdir('episode_reward_mean', 'max')
+        ckpnt = analysis.get_best_checkpoint(trial, 'training_iteration', 'max')
 
-    # define the configuration for the validation
-    config = {
-        "env": GridEnv,
-        "env_config": {
-            "grid_path": grid_path,
-        },
-        "framework": 'torch',
-    }
+        # define the configuration for the validation
+        config = train_config(grid_path)
 
-    # restore the agent from the checkpoint
-    trainer = risk_averse_trainer()
-    agent = trainer(config=config)
-    agent.restore(ckpnt)
+        # restore the agent from the checkpoint
+        trainer = risk_averse_trainer()
+        agent = trainer(config=config)
+        agent.restore(ckpnt)
 
-    env = GridEnv({'grid_path': grid_path})
-    sta = env.reset()
+        env = GridEnv({'grid_path': grid_path})
+        sta = env.reset()
 
-    while True:
-        act = agent.compute_action(sta)
-        sta, _, done, _ = env.step(act)
-        env.render()
-        time.sleep(.5)
-
-        if done:
-            sta = env.reset()
+        while True:
+            act = agent.compute_action(sta)
+            sta, _, done, _ = env.step(act)
             env.render()
             time.sleep(.5)
+
+            if done:
+                sta = env.reset()
+                env.render()
+                time.sleep(.5)
 
 
 if __name__ == '__main__':

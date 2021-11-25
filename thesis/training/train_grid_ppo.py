@@ -18,22 +18,22 @@ def training(grid_path, checkpoint_path, name, resume):
 
     # define the configuration for the training
     config = {
-        "env": GridEnv,
-        "env_config": {
-            "grid_path": grid_path,
+        'env': GridEnv,
+        'env_config': {
+            'grid_path': grid_path,
         },
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
-        # "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-        # "model": {
-        #     "custom_model": "my_model",
-        #     "vf_share_layers": True,
+        # 'num_gpus': int(os.environ.get('RLLIB_NUM_GPUS', '0')),
+        # 'model': {
+        #     'custom_model': 'my_model',
+        #     'vf_share_layers': True,
         # },
-        "num_workers": 0,
-        "framework": 'torch',
+        'num_workers': 0,
+        'framework': 'torch',
     }
 
     stop = {
-        "training_iteration": 50
+        'training_iteration': 50
     }
 
     # run the training using tune for hyperparameter tuning
@@ -52,11 +52,11 @@ def validate(analysis, grid_path):
 
     # define the configuration for the validation
     config = {
-        "env": GridEnv,
-        "env_config": {
-            "grid_path": grid_path,
+        'env': GridEnv,
+        'env_config': {
+            'grid_path': grid_path,
         },
-        "framework": 'torch',
+        'framework': 'torch',
     }
 
     # restore the agent from the checkpoint

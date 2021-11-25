@@ -3,26 +3,26 @@ Constructs modified PPO training components to include risk management.
 """
 
 import torch
+import numpy as np
 
+from ray.rllib.evaluation.postprocessing import discount_cumsum
 from ray.rllib.agents.ppo import PPOTrainer
-from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy
-from ray.rllib.evaluation.postprocessing import Postprocessing
+from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy, ppo_surrogate_loss
 from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.evaluation.postprocessing import compute_gae_for_sample_batch
 # from ray.rllib.utils.torch_utils import explained_variance, sequence_mask
 
 
 def risk_averse_policy():
     """
     Builds a custom policy which includes risk averse action taking.
-    :return: The policy object.
+    :return: The policy class.
     """
-    # TODO
-    # Modify trajectory:    Add squared reward trajectory
-    # Modify training:      Add squared value function based on squared trajectory
-    # Modify loss:          Add risk assesment to loss computation
     policy = PPOTorchPolicy.with_updates(
         name='RiskAversePolicy',
-        loss_fn=lambda m, d, t: loss(policy, m, d, t)
+        loss_fn=loss,
+        optimizer_fn=optimizer,
+        postprocess_fn=postprocessing
     )
 
     return policy
@@ -31,15 +31,83 @@ def risk_averse_policy():
 def risk_averse_trainer():
     """
     Wraps the risk averse policy into a trainer.
-    :return: The trainer object for the custom risk averse policy.
+    :return: The trainer class for the custom risk averse policy.
     """
     policy = risk_averse_policy()
 
     trainer = PPOTrainer.with_updates(
-        default_policy=policy
+        default_policy=policy,
+        get_policy_class=lambda _: None
     )
 
     return trainer
+
+
+def postprocessing(policy, sample_batch, other_agent_batches=None, episode=None):
+    """
+    Performs advantage computation. This adds risk values to each state reward.
+    :param policy: The policy being trained.
+    :param sample_batch: The sampled trajectories.
+    :param other_agent_batches: Included for compatibility.
+    :param episodes: Included for compatibility.
+    :return: The updated batches dict.
+    """
+    with torch.no_grad():
+        obs = torch.from_numpy(sample_batch[SampleBatch.OBS])
+
+        outs_p2 = policy.model.risk_net_p2(obs).squeeze()
+        outs_p1 = policy.model.risk_net_p1(obs).squeeze()
+
+        risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
+        sample_batch[SampleBatch.REWARDS] -= risk.numpy() * 1.2
+
+        return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
+
+
+def optimizer(policy, config):
+    """
+    Provides an optimizer for the training.
+    :param policy: The policy being trained.
+    :param config: The configuration dictionary of the training.
+    :return: A torch optimizer.
+    """
+    setup_risk_nets(policy)
+    return torch.optim.Adam(policy.model.parameters(), lr=config["lr"])
+
+
+def setup_risk_nets(policy):
+    """
+    This function configures the risk nets as part of the model.
+    :param policy: The policy being trained.
+
+    """
+    policy.model.risk_net_p1 = risk_net(12)
+    policy.model.risk_net_p2 = risk_net(12)
+
+
+def value_targets(policy, sample_batch, power=1.0):
+    """
+    Computes the value targets given the power to which each reward is taken.
+    :param policy: The policy being trained.
+    :param sample_batch: The collected trajectories.
+    :param power: The power value each reward is taken to.
+    """
+    # get the final reward value to extend the trajectory
+    if sample_batch[SampleBatch.DONES][-1]:
+        last_r = 0.0
+    else:
+        input_dict = sample_batch.get_single_step_input_dict(policy.model.view_requirements, index="last")
+        last_r = policy._value(**input_dict)
+
+    # create the combined trajectoy
+    rewards_plus_v = np.concatenate([sample_batch[SampleBatch.REWARDS], np.array([last_r])])
+
+    # raise the rewards by the given power
+    rewards_plus_v = np.power(rewards_plus_v, power)
+
+    # return the discounted reward cumsum
+    # return discount_cumsum(rewards_plus_v, 0)[:-1].astype(np.float32)
+    return discount_cumsum(rewards_plus_v, policy.config["gamma"])[:-1].astype(np.float32)
 
 
 def loss(policy, model, dist_class, train_batch):
@@ -52,60 +120,36 @@ def loss(policy, model, dist_class, train_batch):
     :param train_batch: The collected training samples.
     :return: The total loss value for optimization.
     """
-    logits, state = model(train_batch)
-    curr_action_dist = dist_class(logits, model)
+    trgt_p1 = torch.from_numpy(value_targets(policy, train_batch, 1))
+    outs_p1 = policy.model.risk_net_p1(train_batch[SampleBatch.OBS]).squeeze()
+    loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
-    reduce_mean_valid = torch.mean
+    trgt_p2 = torch.from_numpy(value_targets(policy, train_batch, 2))
+    outs_p2 = policy.model.risk_net_p2(train_batch[SampleBatch.OBS]).squeeze()
+    loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
-    prev_action_dist = dist_class(
-        train_batch[SampleBatch.ACTION_DIST_INPUTS], model)
+    # print(policy.model.risk_net_p1(torch.from_numpy(np.eye(12, dtype=np.float32))).squeeze().detach())
 
-    logp_ratio = torch.exp(
-        curr_action_dist.logp(train_batch[SampleBatch.ACTIONS]) -
-        train_batch[SampleBatch.ACTION_LOGP])
-    action_kl = prev_action_dist.kl(curr_action_dist)
-    mean_kl_loss = reduce_mean_valid(action_kl)
+    # add the risk/variance estimators to the total loss
+    loss_surroagte = ppo_surrogate_loss(policy, model, dist_class, train_batch)
 
-    curr_entropy = curr_action_dist.entropy()
-    mean_entropy = reduce_mean_valid(curr_entropy)
+    # add the loss for each risk net to the total loss
+    loss = loss_surroagte + 100 * loss_p1 + 100 * loss_p2
 
-    surrogate_loss = torch.min(
-        train_batch[Postprocessing.ADVANTAGES] * logp_ratio,
-        train_batch[Postprocessing.ADVANTAGES] * torch.clamp(
-            logp_ratio, 1 - policy.config["clip_param"],
-            1 + policy.config["clip_param"]))
-    mean_policy_loss = reduce_mean_valid(-surrogate_loss)
+    print('LOSS', f'{loss:10.3f}', 'LOSS SUR', f'{loss_surroagte: 10.3f}', 'LOSS P1',
+          f'{loss_p1.item(): 10.3f}', 'LOSS P2', f'{loss_p2.item(): 10.3f}')
 
-    # Compute a value function loss.
-    if policy.config["use_critic"]:
-        prev_value_fn_out = train_batch[SampleBatch.VF_PREDS]
-        value_fn_out = model.value_function()
-        vf_loss1 = torch.pow(
-            value_fn_out - train_batch[Postprocessing.VALUE_TARGETS], 2.0)
-        vf_clipped = prev_value_fn_out + torch.clamp(
-            value_fn_out - prev_value_fn_out,
-            -policy.config["vf_clip_param"], policy.config["vf_clip_param"])
-        vf_loss2 = torch.pow(
-            vf_clipped - train_batch[Postprocessing.VALUE_TARGETS], 2.0)
-        vf_loss = torch.max(vf_loss1, vf_loss2)
-        mean_vf_loss = reduce_mean_valid(vf_loss)
-    # Ignore the value function.
-    else:
-        vf_loss = mean_vf_loss = 0.0
+    return loss
 
-    total_loss = reduce_mean_valid(-surrogate_loss +
-                                   policy.kl_coeff * action_kl +
-                                   policy.config["vf_loss_coeff"] * vf_loss -
-                                   policy.entropy_coeff * curr_entropy)
 
-    # Store values for stats function in model (tower), such that for
-    # multi-GPU, we do not override them during the parallel loss phase.
-    model.tower_stats["total_loss"] = total_loss
-    model.tower_stats["mean_policy_loss"] = mean_policy_loss
-    model.tower_stats["mean_vf_loss"] = mean_vf_loss
-    # model.tower_stats["vf_explained_var"] = explained_variance(
-    #     train_batch[Postprocessing.VALUE_TARGETS], model.value_function())
-    model.tower_stats["mean_entropy"] = mean_entropy
-    model.tower_stats["mean_kl_loss"] = mean_kl_loss
-
-    return total_loss
+def risk_net(input_size):
+    """
+    Generates a torch model for risk estimation.
+    :param input_size: The size of the input layer.
+    :returns: A pytorch model with the shape of input_size : 1
+    """
+    return torch.nn.Sequential(
+        torch.nn.Linear(input_size, 16),
+        torch.nn.Linear(16, 16),
+        torch.nn.Linear(16, 1)
+    )
