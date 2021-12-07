@@ -38,7 +38,7 @@ def training(grid_path, checkpoint_path, name, resume):
     config = train_config(grid_path)
 
     stop = {
-        'training_iteration': 150
+        'training_iteration': 100
     }
 
     # run the training using tune for hyperparameter tuning

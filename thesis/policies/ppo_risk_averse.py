@@ -20,9 +20,9 @@ def risk_averse_policy():
     """
     policy = PPOTorchPolicy.with_updates(
         name='RiskAversePolicy',
-        loss_fn=loss,
-        optimizer_fn=optimizer,
-        postprocess_fn=postprocessing
+        loss_fn=loss_fn,
+        optimizer_fn=optimizer_fn,
+        postprocess_fn=postprocessing_fn
     )
 
     return policy
@@ -43,7 +43,7 @@ def risk_averse_trainer():
     return trainer
 
 
-def postprocessing(policy, sample_batch, other_agent_batches=None, episode=None):
+def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=None):
     """
     Performs advantage computation. This adds risk values to each state reward.
     :param policy: The policy being trained.
@@ -59,30 +59,32 @@ def postprocessing(policy, sample_batch, other_agent_batches=None, episode=None)
         outs_p1 = policy.model.risk_net_p1(obs).squeeze()
 
         risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
-        sample_batch[SampleBatch.REWARDS] -= risk.numpy() * 1.2
+        sample_batch[SampleBatch.REWARDS] -= risk.numpy() * 0.4
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
 
 
-def optimizer(policy, config):
+def optimizer_fn(policy, config):
     """
     Provides an optimizer for the training.
     :param policy: The policy being trained.
     :param config: The configuration dictionary of the training.
     :return: A torch optimizer.
     """
-    setup_risk_nets(policy)
-    return torch.optim.Adam(policy.model.parameters(), lr=config["lr"])
 
+    # generate the default optmizer for the policy net
+    optim = torch.optim.Adam(policy.model.parameters(), lr=config["lr"])
 
-def setup_risk_nets(policy):
-    """
-    This function configures the risk nets as part of the model.
-    :param policy: The policy being trained.
-
-    """
+    # attache the risk estimation models to the policy model
+    # these models must be part of the policy model for parameter assignment to work
     policy.model.risk_net_p1 = risk_net(12)
     policy.model.risk_net_p2 = risk_net(12)
+
+    # define optimizers for each risk estimation model
+    optim_risk_p1 = torch.optim.Adam(policy.model.risk_net_p1.parameters(), lr=config["lr"])
+    optim_risk_p2 = torch.optim.Adam(policy.model.risk_net_p2.parameters(), lr=config["lr"])
+
+    return optim, optim_risk_p1, optim_risk_p2
 
 
 def value_targets(policy, sample_batch, power=1.0):
@@ -106,20 +108,21 @@ def value_targets(policy, sample_batch, power=1.0):
     rewards_plus_v = np.power(rewards_plus_v, power)
 
     # return the discounted reward cumsum
-    # return discount_cumsum(rewards_plus_v, 0)[:-1].astype(np.float32)
+    return discount_cumsum(rewards_plus_v, 0)[:-1].astype(np.float32)  # TODO: <- remove override with gamma zero
     return discount_cumsum(rewards_plus_v, policy.config["gamma"])[:-1].astype(np.float32)
 
 
-def loss(policy, model, dist_class, train_batch):
+def loss_fn(policy, model, dist_class, train_batch):
     """
     Custom implementation of the ppo loss function.
-    This function adds risk to the objective and optimizes for variance estimation.
     :param policy: The policy that is trained.
     :param model: The model being trained.
     :param dist_class: The action distribution.
     :param train_batch: The collected training samples.
     :return: The total loss value for optimization.
     """
+
+    # compute the loss for each of the risk estimation networks
     trgt_p1 = torch.from_numpy(value_targets(policy, train_batch, 1))
     outs_p1 = policy.model.risk_net_p1(train_batch[SampleBatch.OBS]).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
@@ -128,18 +131,17 @@ def loss(policy, model, dist_class, train_batch):
     outs_p2 = policy.model.risk_net_p2(train_batch[SampleBatch.OBS]).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
-    # print(policy.model.risk_net_p1(torch.from_numpy(np.eye(12, dtype=np.float32))).squeeze().detach())
+    b = policy.model.risk_net_p2(torch.from_numpy(np.eye(12, dtype=np.float32))).squeeze().detach().numpy()
+    a = policy.model.risk_net_p1(torch.from_numpy(np.eye(12, dtype=np.float32))).squeeze().detach().numpy()
 
-    # add the risk/variance estimators to the total loss
-    loss_surroagte = ppo_surrogate_loss(policy, model, dist_class, train_batch)
+    print('RISK', np.round(b - np.power(a, 2), 2))
+    print('VAR1', np.round(a, 2))
 
-    # add the loss for each risk net to the total loss
-    loss = loss_surroagte + 100 * loss_p1 + 100 * loss_p2
+    # compute the default loss value
+    loss_surrogate = ppo_surrogate_loss(policy, model, dist_class, train_batch)
+    print('LOSS SUR', f'{loss_surrogate: 10.3f}', 'LOSS P1', f'{loss_p1.item(): 10.3f}', 'LOSS P2', f'{loss_p2.item(): 10.3f}')
 
-    print('LOSS', f'{loss:10.3f}', 'LOSS SUR', f'{loss_surroagte: 10.3f}', 'LOSS P1',
-          f'{loss_p1.item(): 10.3f}', 'LOSS P2', f'{loss_p2.item(): 10.3f}')
-
-    return loss
+    return loss_surrogate, loss_p1, loss_p2
 
 
 def risk_net(input_size):
@@ -150,6 +152,8 @@ def risk_net(input_size):
     """
     return torch.nn.Sequential(
         torch.nn.Linear(input_size, 16),
+        torch.nn.ReLU(),
         torch.nn.Linear(16, 16),
+        torch.nn.ReLU(),
         torch.nn.Linear(16, 1)
     )
