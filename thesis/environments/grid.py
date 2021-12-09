@@ -2,6 +2,7 @@
 Grid world implementation following OpenAI standards.
 """
 
+import os
 import json
 import gym
 import numpy as np
@@ -29,7 +30,7 @@ class GridEnv(gym.Env):
 
         # read the configuration from the provided file
         # file is not checked for validity
-        with open(config['grid_path']) as file:
+        with open(os.path.join(config['root'], config['grid_path'])) as file:
             setup = json.loads(file.read().lower())
 
         # the world is defined as a list of strings
