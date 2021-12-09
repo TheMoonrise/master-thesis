@@ -77,8 +77,10 @@ def optimizer_fn(policy, config):
 
     # attache the risk estimation models to the policy model
     # these models must be part of the policy model for parameter assignment to work
-    policy.model.risk_net_p1 = risk_net(12)
-    policy.model.risk_net_p2 = risk_net(12)
+    input_size = policy.observation_space.shape[0]
+
+    policy.model.risk_net_p1 = risk_net(input_size, config)
+    policy.model.risk_net_p2 = risk_net(input_size, config)
 
     # define optimizers for each risk estimation model
     optim_risk_p1 = torch.optim.Adam(policy.model.risk_net_p1.parameters(), lr=config["lr"])
@@ -131,11 +133,12 @@ def loss_fn(policy, model, dist_class, train_batch):
     outs_p2 = policy.model.risk_net_p2(train_batch[SampleBatch.OBS]).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
-    b = policy.model.risk_net_p2(torch.from_numpy(np.eye(12, dtype=np.float32))).squeeze().detach().numpy()
-    a = policy.model.risk_net_p1(torch.from_numpy(np.eye(12, dtype=np.float32))).squeeze().detach().numpy()
+    # input_size = policy.observation_space.shape[0]
+    # b = policy.model.risk_net_p2(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
+    # a = policy.model.risk_net_p1(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
 
-    print('RISK', np.round(b - np.power(a, 2), 2))
-    print('VAR1', np.round(a, 2))
+    # print('RISK', np.round(b - np.power(a, 2), 2))
+    # print('VAR1', np.round(a, 2))
 
     # compute the default loss value
     loss_surrogate = ppo_surrogate_loss(policy, model, dist_class, train_batch)
@@ -144,16 +147,17 @@ def loss_fn(policy, model, dist_class, train_batch):
     return loss_surrogate, loss_p1, loss_p2
 
 
-def risk_net(input_size):
+def risk_net(input_size, config):
     """
     Generates a torch model for risk estimation.
     :param input_size: The size of the input layer.
+    :param config: The training configuration.
     :returns: A pytorch model with the shape of input_size : 1
     """
     return torch.nn.Sequential(
-        torch.nn.Linear(input_size, 16),
+        torch.nn.Linear(input_size, 64),
         torch.nn.ReLU(),
-        torch.nn.Linear(16, 16),
+        torch.nn.Linear(64, 16),
         torch.nn.ReLU(),
         torch.nn.Linear(16, 1)
     )

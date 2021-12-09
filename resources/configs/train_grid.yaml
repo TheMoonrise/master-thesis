@@ -1,6 +1,6 @@
 env: gridworld
 env_config:
-    grid_path: .\resources\grids\grid_default.json
+    grid_path: .\resources\grids\grid_medium.json
 use_gae: true
 use_critic: true
 num_workers: 0

@@ -80,7 +80,7 @@ class GridEnv(gym.Env):
         Return the environment into the initial state
         :return: The initial state
         """
-        self.position = np.array(self.origins[np.random.choice(len(self.position))])
+        self.position = np.array(self.origins[np.random.choice(len(self.origins))])
         self.done = False
         return self.state_number(self.position)
 
@@ -95,7 +95,7 @@ class GridEnv(gym.Env):
         if not self.figure:
             plt.rcParams['toolbar'] = 'None'
 
-            self.figure = plt.figure(facecolor='black')
+            self.figure = plt.figure(facecolor='black', figsize=self.world.shape[1::-1])
             self.axes = self.figure.gca()
             self.axes.axis('off')
 
@@ -112,7 +112,7 @@ class GridEnv(gym.Env):
         # insert reward signals into the graphics
         for r, c in np.ndindex(grid.shape):
             text = f'N({self.world[r, c, 0]}, {self.world[r, c, 1]})'
-            self.axes.text(c, r, text, ha='center', va='center')
+            self.axes.text(c, r, text, ha='center', va='center', fontsize='x-small')
 
         self.axes.matshow(grid)
 
