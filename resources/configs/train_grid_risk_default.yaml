@@ -1,0 +1,13 @@
+risk-ppo:
+    env: Gridworld
+    run: PPO-RISK
+    stop:
+        training_iteration: 5
+    config:
+        env_config:
+            grid_path: .\resources\grids\grid_default.json
+            root: null
+        use_gae: true
+        use_critic: true
+        num_workers: 0
+        framework: torch

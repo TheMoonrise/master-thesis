@@ -24,17 +24,29 @@ def setup():
     Register custom models with the rllib library.
     """
     ray.init()
-    register_env('gridworld', GridEnv)
+    register_env('Gridworld', GridEnv)
 
 
-def selected_config(path):
+def selected_preferences(path):
     """
-    Reads the config contents from the yaml file.
+    Reads the preferences contents from the yaml file.
     :param path: The path to the yaml config file.
-    :return: The config dictionary.
+    :return: The preferences dictionary.
     """
     with open(path) as file:
-        return yaml.safe_load(file)
+        # TODO: Use rllib tuned yaml
+        # run key rename -> run_or_experiment
+        prefs = yaml.safe_load(file)
+
+    # remove the first layer of the preferences
+    prefs = prefs[list(prefs.keys())[0]]
+    prefs['config']['env'] = prefs['env']
+
+    # add the project root path to the config
+    if 'env_config' in prefs['config'] and 'root' in prefs['config']['env_config']:
+        prefs['config']['env_config']['root'] = prefs['config']['env_config']['root'] or os.getcwd()
+
+    return prefs
 
 
 def selected_trainer(model):
@@ -43,25 +55,22 @@ def selected_trainer(model):
     :param model: The name of the model to train.
     :return: The trainer class for the input parameters. Default return is vanilla ppo.
     """
-    if model == 'risk': return risk_averse_trainer()
-    return PPOTrainer
+    if model == 'PPO-RISK': return risk_averse_trainer()
+    if model == 'PPO': return PPOTrainer
+    raise Exception(f'Model {model} not implemented')
 
 
-def training(trainer, config, checkpoint_path, name, resume, iterations):
+def training(trainer, config, stop, checkpoint_path, name, resume):
     """
     Performs a training run using tune.
     :param trainer: The trainer class to be used for the training.
     :param config: The configuration for the training.
+    :param stop: The stopping condition for the training.
     :param checkpoint_path: The path where to save the checkpoints to.
     :param name: The name of the training run.
     :param resume: Whether a previous run with the same name should be resumed.
-    :param iterations: The number of iterations to run for.
     :return: The analyis containing training results.
     """
-    stop = {'training_iteration': iterations}
-
-    # run the training using tune for hyperparameter tuning
-    # training results are stored in analysis
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,
                         local_dir=checkpoint_path, resume=resume, name=name)
 
@@ -86,30 +95,30 @@ def validate(analysis, trainer, config):
         agent.restore(ckpnt)
 
         # env = GridEnv(config['env_config'])
-        env = agent.env_creator(config['env_config'])
+        env_config = config['env_config'] if 'env_config' in config else {}
+        sleep = env_config['timeout'] if 'timeout' in env_config else 0
+
+        env = agent.env_creator(env_config)
         sta = env.reset()
 
         while True:
             act = agent.compute_single_action(sta)
             sta, _, done, _ = env.step(act)
             env.render()
-            time.sleep(.5)
+            if sleep > 0: time.sleep(sleep)
 
             if done:
                 sta = env.reset()
                 env.render()
-                time.sleep(.5)
+                if sleep > 0: time.sleep(sleep)
 
 
 if __name__ == '__main__':
     parse = argparse.ArgumentParser()
 
     parse.add_argument('path', help='The configuration YAML file for the training parameters', type=str)
-    parse.add_argument('--root', help='The root path of the project. If none the current working directory is used', type=str)
 
-    parse.add_argument('--model', help='The name of the model to be used', type=str)
     parse.add_argument('--name', help='The name of the run', type=str)
-    parse.add_argument('--iterations', help='The number of training iterations', type=int, default=50)
     parse.add_argument('--resume', help='Whether a previous run should be resumed', action='store_true')
 
     args = parse.parse_args()
@@ -117,21 +126,18 @@ if __name__ == '__main__':
     # run the setup for adding custom environments and initializing ray
     setup()
 
-    config = selected_config(args.path)
-
-    # add the project root path to the config
-    if 'env_config' not in config: config['env_config'] = {}
-    if 'root' not in config['env_config']: config['env_config']['root'] = args.root or os.getcwd()
+    prefs = selected_preferences(args.path)
 
     # create an output folder for training checkpoints
     checkpoint_path = os.path.join(os.path.dirname(__file__), '..', '..', 'checkpoints')
     os.makedirs(checkpoint_path, exist_ok=True)
 
     # fetch the trainer for the requested model
-    trainer = selected_trainer(args.model)
+    trainer = selected_trainer(prefs['run'])
 
     # perform the training
-    analysis = training(trainer, config, checkpoint_path, args.name, args.resume, args.iterations)
+    print('\n\nCONFIG\n\n', prefs, '\n\n')
+    analysis = training(trainer, prefs['config'], prefs['stop'], checkpoint_path, args.name, args.resume)
 
     # validate the results
-    validate(analysis, trainer, config)
+    validate(analysis, trainer, prefs['config'])
