@@ -18,9 +18,5 @@ The `train.py` script accepts several arguments to customize the training.
 ```
 --name          Names the training run.
                 This helps finding the training results and allows for runs to be resumed.
-
---iterations    The number of iterations the training will run for.
----model        The model to be trained. Use "risk" to train the risk aware model.
 --resume        Resumes a previously started training.
---root          The root directory to which all relative paths relate.
 ```

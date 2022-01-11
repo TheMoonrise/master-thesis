@@ -103,11 +103,13 @@ class GridEnv(gym.Env):
             plt.ion()
             plt.show()
 
+        self.axes.clear()
+
         # build a matrix to display the grid environment by
-        grid = np.ones(self.world.shape[:2])
-        for t in self.origins: grid[t] = 0
-        for t in self.targets: grid[t] = 3
-        grid[tuple(self.position)] = 2
+        grid = np.zeros(self.world.shape[:2])
+        for t in self.origins: grid[t] = 4
+        for t in self.targets: grid[t] = 6
+        grid[tuple(self.position)] = 10
 
         # insert reward signals into the graphics
         for r, c in np.ndindex(grid.shape):
