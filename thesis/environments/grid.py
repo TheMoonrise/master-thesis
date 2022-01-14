@@ -4,6 +4,13 @@ Grid world implementation following OpenAI standards.
 
 import os
 import json
+
+from collections import defaultdict
+
+import time
+import argparse
+from turtle import color
+
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,6 +28,7 @@ class GridEnv(gym.Env):
         """
         self.origins = []
         self.targets = []
+        self.actions = defaultdict(lambda: None)
 
         self.position = [0, 0]
         self.done = True
@@ -64,10 +72,10 @@ class GridEnv(gym.Env):
         """
         if self.done: print('The environment is in a terminal state. Reset the environment before stepping')
 
-        import time
-        time.sleep(2)
-        # action[action < 0] = 0
-        # action = action / np.sum(action) if np.sum(action) > 0 else np.array([0.25, 0.25, 0.25, 0.25])
+        # store the action distribution for the current state
+        current_state_number = self.state_number(self.position)
+        self.actions[str(current_state_number)] = action
+
         action = np.random.choice(4, p=action)
 
         delta_c = (2 - action) * (action % 2)
@@ -102,7 +110,7 @@ class GridEnv(gym.Env):
         if not self.figure:
             plt.rcParams['toolbar'] = 'None'
 
-            self.figure = plt.figure(facecolor='black', figsize=self.world.shape[1::-1])
+            self.figure = plt.figure(facecolor='black', figsize=[x * 1.5 for x in self.world.shape[1::-1]])
             self.axes = self.figure.gca()
             self.axes.axis('off')
 
@@ -121,7 +129,20 @@ class GridEnv(gym.Env):
         # insert reward signals into the graphics
         for r, c in np.ndindex(grid.shape):
             text = f'N({self.world[r, c, 0]}, {self.world[r, c, 1]})'
-            self.axes.text(c, r, text, ha='center', va='center', fontsize='x-small')
+            self.axes.text(c, r + .18, text, ha='center', va='center', fontsize='x-small',
+                           weight='bold', family='monospace', color='white')
+
+            for action in range(4):
+                state_number = str(self.state_number((r, c)))
+                if not self.actions[state_number]: break
+                value = self.actions[state_number][action]
+                text = str(round(value, 2))
+
+                offset = .35
+                delta_c = (2 - action) * (action % 2) * offset
+                delta_r = (1 - action) * ((action + 1) % 2) * offset
+                self.axes.text(c + delta_c, r + delta_r, text, ha='center', va='center',
+                               fontsize='x-small', color='white', family='monospace', weight='bold')
 
         self.axes.matshow(grid)
 
@@ -138,3 +159,24 @@ class GridEnv(gym.Env):
         :return: The position as a single int.
         """
         return position[0] * self.world.shape[0] + position[1]
+
+
+if __name__ == '__main__':
+    # Perform random moves and rendering for debug purposes
+    parse = argparse.ArgumentParser()
+    parse.add_argument('path', help='The path ot the grid config to debug', type=str)
+    args = parse.parse_args()
+
+    config = {'root': os.getcwd(), 'grid_path': args.path}
+    grid = GridEnv(config)
+    done = True
+
+    while True:
+        if done:
+            grid.reset()
+            done = False
+        else:
+            _, _, done, _ = grid.step([.25, .25, .25, .25])
+
+        grid.render()
+        time.sleep(.2)
