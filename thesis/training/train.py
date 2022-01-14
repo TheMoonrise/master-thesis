@@ -13,6 +13,8 @@ from ray import tune
 from ray.tune.registry import register_env
 from ray.rllib.agents.ppo import PPOTrainer
 
+from ray.rllib.models.torch.torch_action_dist import TorchDirichlet
+from ray.rllib.models import ModelCatalog
 
 from thesis.environments.grid import GridEnv
 from thesis.policies.ppo_risk_averse import risk_averse_trainer
@@ -21,10 +23,23 @@ from thesis.policies.ppo_risk_averse import risk_averse_trainer
 def setup():
     """
     Prepares ray, and other components for training and validation.
-    Register custom models with the rllib library.
+    Register custom models with the RlLib library.
     """
     ray.init()
+    # ray.init(local_mode=True)
+
     register_env('Gridworld', GridEnv)
+
+    # Overwrite of the default TorchDirichlet action distribution.
+    # Default implementation throws and error:
+    # The function kl_divergence is not implemented for torch.distributions.dirichlet
+    # This patch overwrites the affected function kl with an alternative implementation
+    # TODO: Check if this is fixed, look for other solution
+    class TorchDirichletPatch(TorchDirichlet):
+        def kl(self, o):
+            return torch.distributions.kl.kl_divergence(o.dist, self.dist)
+
+    ModelCatalog.register_custom_action_dist("Dirichlet", TorchDirichletPatch)
 
 
 def selected_preferences(path):
@@ -34,7 +49,7 @@ def selected_preferences(path):
     :return: The preferences dictionary.
     """
     with open(path) as file:
-        # TODO: Use rllib tuned yaml
+        # TODO: Use RlLib tuned yaml
         # run key rename -> run_or_experiment
         prefs = yaml.safe_load(file)
 
@@ -69,7 +84,7 @@ def training(trainer, config, stop, checkpoint_path, name, resume):
     :param checkpoint_path: The path where to save the checkpoints to.
     :param name: The name of the training run.
     :param resume: Whether a previous run with the same name should be resumed.
-    :return: The analyis containing training results.
+    :return: The analysis containing training results.
     """
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,
                         local_dir=checkpoint_path, resume=resume, name=name)
@@ -88,11 +103,11 @@ def validate(analysis, trainer, config):
     with torch.no_grad():
         # perform some verification runs on the environment
         trial = analysis.get_best_logdir('episode_reward_mean', 'max')
-        ckpnt = analysis.get_best_checkpoint(trial, 'training_iteration', 'max')
+        point = analysis.get_best_checkpoint(trial, 'training_iteration', 'max')
 
         # restore the agent from the checkpoint
         agent = trainer(config=config)
-        agent.restore(ckpnt)
+        agent.restore(point)
 
         # env = GridEnv(config['env_config'])
         env_config = config['env_config'] if 'env_config' in config else {}

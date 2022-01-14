@@ -17,7 +17,7 @@ class GridEnv(gym.Env):
     def __init__(self, config):
         """
         Loads the environment configuration.
-        :param config: The config dict provided throught the RLlib trainer.
+        :param config: The config dict provided through the RlLib trainer.
         """
         self.origins = []
         self.targets = []
@@ -48,7 +48,8 @@ class GridEnv(gym.Env):
 
         # define action and state spaces
         # divide world size by two because each tile has two value entries
-        self.action_space = gym.spaces.Discrete(4)
+        self.action_space = gym.spaces.Box(low=0, high=1, shape=(4,))
+        # self.action_space = gym.spaces.Discrete(4)
         self.observation_space = gym.spaces.Discrete(self.world.size // 2)
 
     def step(self, action):
@@ -57,11 +58,17 @@ class GridEnv(gym.Env):
         :param action: The action to be executed.
         Actions can take the values 0, 1, 2, 3 corresponding to the directions UP, RIGHT, DOWN, LEFT.
         :return: The new state the environment is now in.
-        :return: The reward received by the agend for the action taken.
+        :return: The reward received by the agent for the action taken.
         :return: Whether a terminal state is reached.
         :return: And info object providing additional information on the current state.
         """
         if self.done: print('The environment is in a terminal state. Reset the environment before stepping')
+
+        import time
+        time.sleep(2)
+        # action[action < 0] = 0
+        # action = action / np.sum(action) if np.sum(action) > 0 else np.array([0.25, 0.25, 0.25, 0.25])
+        action = np.random.choice(4, p=action)
 
         delta_c = (2 - action) * (action % 2)
         delta_r = (1 - action) * ((action + 1) % 2)
@@ -87,7 +94,7 @@ class GridEnv(gym.Env):
     def render(self, mode='human'):
         """
         Renders the current grid environment using pyplot.
-        Each iteration introduces a brief dely. Therefore this functions should be avoided for training.
+        Each iteration introduces a brief delay. Therefore this functions should be avoided for training.
         :param model: Rendering mode for open ai compatability.
         """
         # if the render function is called for the first time

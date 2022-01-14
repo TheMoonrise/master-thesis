@@ -9,6 +9,7 @@ from ray.rllib.evaluation.postprocessing import discount_cumsum
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy, ppo_surrogate_loss
 from ray.rllib.policy.sample_batch import SampleBatch
+# from ray.rllib.models.torch.torch_action_dist import TorchDirichlets
 from ray.rllib.evaluation.postprocessing import compute_gae_for_sample_batch
 # from ray.rllib.utils.torch_utils import explained_variance, sequence_mask
 
@@ -53,13 +54,13 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
     :return: The updated batches dict.
     """
     with torch.no_grad():
-        obs = torch.from_numpy(sample_batch[SampleBatch.OBS])
+        # obs = torch.from_numpy(sample_batch[SampleBatch.OBS])
 
-        outs_p2 = policy.model.risk_net_p2(obs).squeeze()
-        outs_p1 = policy.model.risk_net_p1(obs).squeeze()
+        # outs_p2 = policy.model.risk_net_p2(obs).squeeze()
+        # outs_p1 = policy.model.risk_net_p1(obs).squeeze()
 
-        risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
-        sample_batch[SampleBatch.REWARDS] -= risk.numpy() * 0.4
+        # risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
+        # sample_batch[SampleBatch.REWARDS] -= risk.numpy() * 0.4
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
 
@@ -72,7 +73,7 @@ def optimizer_fn(policy, config):
     :return: A torch optimizer.
     """
 
-    # generate the default optmizer for the policy net
+    # generate the default optimizer for the policy net
     optim = torch.optim.Adam(policy.model.parameters(), lr=config["lr"])
 
     # attache the risk estimation models to the policy model
@@ -103,7 +104,7 @@ def value_targets(policy, sample_batch, power=1.0):
         input_dict = sample_batch.get_single_step_input_dict(policy.model.view_requirements, index="last")
         last_r = policy._value(**input_dict)
 
-    # create the combined trajectoy
+    # create the combined trajectory
     rewards_plus_v = np.concatenate([sample_batch[SampleBatch.REWARDS], np.array([last_r])])
 
     # raise the rewards by the given power
@@ -123,13 +124,14 @@ def loss_fn(policy, model, dist_class, train_batch):
     :param train_batch: The collected training samples.
     :return: The total loss value for optimization.
     """
-
     # compute the loss for each of the risk estimation networks
-    trgt_p1 = torch.from_numpy(value_targets(policy, train_batch, 1))
+    trgt_p1 = train_batch[SampleBatch.REWARDS]
+    # trgt_p1 = torch.from_numpy(value_targets(policy, train_batch, 1))
     outs_p1 = policy.model.risk_net_p1(train_batch[SampleBatch.OBS]).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
-    trgt_p2 = torch.from_numpy(value_targets(policy, train_batch, 2))
+    trgt_p2 = torch.pow(train_batch[SampleBatch.REWARDS], 2.0)
+    # trgt_p2 = torch.from_numpy(value_targets(policy, train_batch, 2))
     outs_p2 = policy.model.risk_net_p2(train_batch[SampleBatch.OBS]).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 

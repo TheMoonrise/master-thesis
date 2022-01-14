@@ -1,0 +1,17 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Master Risk Default",
+			"type": "python",
+			"request": "launch",
+			"program": ".\\thesis\\training\\train.py",
+			"console": "integratedTerminal",
+			"args": [".\\resources\\configs\\train_grid_risk_default.yaml", "--name", "test"],
+			"justMyCode": false
+		}
+	]
+}
