@@ -161,7 +161,7 @@ class GridEnv(gym.Env):
         :param position: The current position as tuple (row, column).
         :return: The position as a single int.
         """
-        return position[0] * self.world.shape[0] + position[1]
+        return position[0] * self.world.shape[1] + position[1]
 
 
 if __name__ == '__main__':

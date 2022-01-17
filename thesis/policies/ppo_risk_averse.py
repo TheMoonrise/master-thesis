@@ -135,12 +135,18 @@ def loss_fn(policy, model, dist_class, train_batch):
     outs_p2 = policy.model.risk_net_p2(train_batch[SampleBatch.OBS]).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
-    # input_size = policy.observation_space.shape[0]
-    # b = policy.model.risk_net_p2(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
-    # a = policy.model.risk_net_p1(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
+    input_size = policy.observation_space.shape[0]
+    b = policy.model.risk_net_p2(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
+    a = policy.model.risk_net_p1(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
 
-    # print('RISK', np.round(b - np.power(a, 2), 2))
-    # print('VAR1', np.round(a, 2))
+    print('RISK', np.round(b - np.power(a, 2), 2))
+    print('MEAN', np.round(a, 2))
+
+    # obs = np.argmax(train_batch[SampleBatch.OBS].numpy(), axis=1)
+    # next_obs = np.argmax(train_batch[SampleBatch.NEXT_OBS].numpy(), axis=1)
+    # actions = np.array([str(x) for x in train_batch[SampleBatch.ACTIONS].numpy()])
+
+    # print('DATA\n', np.stack((obs, next_obs, actions), axis=1))
 
     # compute the default loss value
     loss_surrogate = ppo_surrogate_loss(policy, model, dist_class, train_batch)

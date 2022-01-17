@@ -20,13 +20,13 @@ from thesis.environments.grid import GridEnv
 from thesis.policies.ppo_risk_averse import risk_averse_trainer
 
 
-def setup():
+def setup(debug):
     """
     Prepares ray, and other components for training and validation.
     Register custom models with the RlLib library.
+    :param debug: Whether ray should be initialized in local mode for debugging.
     """
-    ray.init()
-    # ray.init(local_mode=True)
+    ray.init(local_mode=debug)
 
     register_env('Gridworld', GridEnv)
 
@@ -135,11 +135,12 @@ if __name__ == '__main__':
 
     parse.add_argument('--name', help='The name of the run', type=str)
     parse.add_argument('--resume', help='Whether a previous run should be resumed', action='store_true')
+    parse.add_argument('--debug', help='Whether the code should not be parallelized', action='store_true')
 
     args = parse.parse_args()
 
     # run the setup for adding custom environments and initializing ray
-    setup()
+    setup(args.debug)
 
     prefs = selected_preferences(args.path)
 

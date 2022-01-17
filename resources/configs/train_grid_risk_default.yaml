@@ -2,7 +2,7 @@ risk-ppo:
     env: Gridworld
     run: PPO-RISK
     stop:
-        training_iteration: 5
+        training_iteration: 50
     config:
         model:
             custom_action_dist: Dirichlet
