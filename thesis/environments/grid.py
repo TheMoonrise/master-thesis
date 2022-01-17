@@ -9,7 +9,6 @@ from collections import defaultdict
 
 import time
 import argparse
-from turtle import color
 
 import gym
 import numpy as np
@@ -110,15 +109,19 @@ class GridEnv(gym.Env):
         if not self.figure:
             plt.rcParams['toolbar'] = 'None'
 
-            self.figure = plt.figure(facecolor='black', figsize=[x * 1.5 for x in self.world.shape[1::-1]])
-            self.axes = self.figure.gca()
-            self.axes.axis('off')
+            self.figure = plt.figure(facecolor='white')
+
+            self.axes = plt.Axes(self.figure, [0, 0, 1, 1])
+            self.axes.set_axis_off()
+            self.figure.add_axes(self.axes)
 
             plt.get_current_fig_manager().set_window_title('Grid Environment')
             plt.ion()
             plt.show()
 
         self.axes.clear()
+        self.axes.hlines(np.arange(0.5, self.world.shape[0] - 1), -0.5, self.world.shape[1], color='k', linewidth=4)
+        self.axes.vlines(np.arange(0.5, self.world.shape[1] - 1), -0.5, self.world.shape[0], color='k', linewidth=4)
 
         # build a matrix to display the grid environment by
         grid = np.zeros(self.world.shape[:2])
