@@ -50,8 +50,8 @@ class GridEnv(gym.Env):
                 self.world[r, c] = setup[t]
 
                 # record origin and target states
-                if t == setup['origin']: self.origins.append((r, c))
-                if t == setup['target']: self.targets.append((r, c))
+                if t in setup['origin']: self.origins.append((r, c))
+                if t in setup['target']: self.targets.append((r, c))
 
         # define action and state spaces
         # divide world size by two because each tile has two value entries
@@ -137,7 +137,7 @@ class GridEnv(gym.Env):
 
             for action in range(4):
                 state_number = str(self.state_number((r, c)))
-                if not self.actions[state_number]: break
+                if self.actions[state_number] is None: break
                 value = self.actions[state_number][action]
                 text = str(round(value, 2))
 

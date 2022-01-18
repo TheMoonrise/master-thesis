@@ -117,7 +117,7 @@ def validate(analysis, trainer, config):
         sta = env.reset()
 
         while True:
-            act = agent.compute_single_action(sta)
+            act = agent.compute_single_action(sta, explore=False)
             sta, _, done, _ = env.step(act)
             env.render()
             if sleep > 0: time.sleep(sleep)

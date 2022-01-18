@@ -10,7 +10,7 @@
 			"request": "launch",
 			"program": ".\\thesis\\training\\train.py",
 			"console": "integratedTerminal",
-			"args": [".\\resources\\configs\\train_grid_risk_default.yaml", "--name", "test"],
+			"args": [".\\resources\\configs\\train_grid_risk_default.yaml", "--debug", "--name", "debugging"],
 			"justMyCode": false
 		}
 	]

@@ -7,7 +7,7 @@ risk-ppo:
         model:
             custom_action_dist: Dirichlet
         env_config:
-            grid_path: .\resources\grids\grid_default.json
+            grid_path: .\resources\grids\grid_target_choice.json
             root: null
             timeout: 0.1
         normalize_actions: false
