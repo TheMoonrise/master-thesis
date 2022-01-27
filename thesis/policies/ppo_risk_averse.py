@@ -53,16 +53,21 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
     :return: The updated batches dict.
     """
     with torch.no_grad():
-        obs = torch.from_numpy(sample_batch[SampleBatch.OBS])
+        risk_in = torch.from_numpy(np.concatenate((sample_batch[SampleBatch.OBS], sample_batch[SampleBatch.ACTIONS]), axis=1))
 
-        outs_p2 = policy.model.risk_net_p2(obs).squeeze()
-        outs_p1 = policy.model.risk_net_p1(obs).squeeze()
+        outs_p2 = policy.model.risk_net_p2(risk_in).squeeze()
+        outs_p1 = policy.model.risk_net_p1(risk_in).squeeze()
 
         # risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
         risk = torch.maximum(outs_p2 - torch.pow(outs_p1, 2.0), torch.tensor(0))
 
+        try:
+            risk_factor = policy.config['model']['custom_model_config']['risk_factor']
+        except:
+            risk_factor = 1
+
         sample_batch['CLEANREWARDS'] = sample_batch[SampleBatch.REWARDS].copy()
-        sample_batch[SampleBatch.REWARDS] -= risk.numpy() * 1.2
+        sample_batch[SampleBatch.REWARDS] -= risk.numpy() * risk_factor
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
 
@@ -80,14 +85,15 @@ def optimizer_fn(policy, config):
 
     # attache the risk estimation models to the policy model
     # these models must be part of the policy model for parameter assignment to work
-    input_size = policy.observation_space.shape[0]
+    input_size = policy.observation_space.shape[0] + policy.action_space.shape[0]
 
     policy.model.risk_net_p1 = risk_net(input_size, config)
     policy.model.risk_net_p2 = risk_net(input_size, config)
 
     # define optimizers for each risk estimation model
-    optim_risk_p1 = torch.optim.Adam(policy.model.risk_net_p1.parameters(), lr=config["lr"])
-    optim_risk_p2 = torch.optim.Adam(policy.model.risk_net_p2.parameters(), lr=config["lr"])
+    risk_lr = config['model']['custom_model_config']['risk_lr']
+    optim_risk_p1 = torch.optim.Adam(policy.model.risk_net_p1.parameters(), lr=risk_lr)
+    optim_risk_p2 = torch.optim.Adam(policy.model.risk_net_p2.parameters(), lr=risk_lr)
 
     return optim, optim_risk_p1, optim_risk_p2
 
@@ -102,30 +108,30 @@ def loss_fn(policy, model, dist_class, train_batch):
     :return: The total loss value for optimization.
     """
     # compute the loss for each of the risk estimation networks
+    risk_in = torch.cat((train_batch[SampleBatch.OBS], train_batch[SampleBatch.ACTIONS]), 1)
+
     trgt_p1 = train_batch['CLEANREWARDS']
-    outs_p1 = policy.model.risk_net_p1(train_batch[SampleBatch.OBS]).squeeze()
+    outs_p1 = policy.model.risk_net_p1(risk_in).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
     trgt_p2 = torch.pow(train_batch['CLEANREWARDS'], 2.0)
-    outs_p2 = policy.model.risk_net_p2(train_batch[SampleBatch.OBS]).squeeze()
+    outs_p2 = policy.model.risk_net_p2(risk_in).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
-    input_size = policy.observation_space.shape[0]
-    b = policy.model.risk_net_p2(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
-    a = policy.model.risk_net_p1(torch.from_numpy(np.eye(input_size, dtype=np.float32))).squeeze().detach().numpy()
+    demo_in = torch.tensor([[0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1]], dtype=torch.float32)
 
-    print('RISK BY STATE (VARIANCE ESTIMATE)\n', np.round(b - np.power(a, 2), 2))
-    print('MEAN BY STATE\n', np.round(a, 2))
+    b = policy.model.risk_net_p2(demo_in).squeeze().detach().numpy()
+    a = policy.model.risk_net_p1(demo_in).squeeze().detach().numpy()
 
-    # obs = np.argmax(train_batch[SampleBatch.OBS].numpy(), axis=1)
-    # next_obs = np.argmax(train_batch[SampleBatch.NEXT_OBS].numpy(), axis=1)
-    # actions = np.array([str(x) for x in train_batch[SampleBatch.ACTIONS].numpy()])
-
-    # print('DATA\n', np.stack((obs, next_obs, actions), axis=1))
+    print('RISK CENTER (VARIANCE ESTIMATE)\n', np.round(b - np.power(a, 2), 2))
+    print('MEAN CENTER\n', np.round(a, 2))
 
     # compute the default loss value
     loss_surrogate = ppo_surrogate_loss(policy, model, dist_class, train_batch)
-    # print('LOSS SUR', f'{loss_surrogate: 10.3f}', 'LOSS P1', f'{loss_p1.item(): 10.3f}', 'LOSS P2', f'{loss_p2.item(): 10.3f}')
+    # print('LOSS SUR', f'{loss_surrogate: 10.3f}', 'LP1', f'{loss_p1.item(): 10.3f}', 'LP2', f'{loss_p2.item(): 10.3f}')
 
     return loss_surrogate, loss_p1, loss_p2
 

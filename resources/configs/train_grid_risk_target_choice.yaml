@@ -7,10 +7,10 @@ risk-ppo:
         model:
             custom_action_dist: Dirichlet
             custom_model_config:
-                risk_factor: 1
+                risk_factor: 0.06
                 risk_lr: 0.00005
         env_config:
-            grid_path: .\resources\grids\grid_alternating.json
+            grid_path: .\resources\grids\grid_target_choice.json
             root: null
             timeout: 0.1
             meta_actions: true

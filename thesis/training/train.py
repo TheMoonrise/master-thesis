@@ -152,7 +152,6 @@ if __name__ == '__main__':
     trainer = selected_trainer(prefs['run'])
 
     # perform the training
-    print('\n\nCONFIG\n\n', prefs, '\n\n')
     analysis = training(trainer, prefs['config'], prefs['stop'], checkpoint_path, args.name, args.resume)
 
     # validate the results

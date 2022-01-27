@@ -55,9 +55,13 @@ class GridEnv(gym.Env):
 
         # define action and state spaces
         # divide world size by two because each tile has two value entries
-        self.action_space = gym.spaces.Box(low=0, high=1, shape=(4,))
-        # self.action_space = gym.spaces.Discrete(4)
         self.observation_space = gym.spaces.Discrete(self.world.size // 2)
+
+        # when meta actions are enabled the action sampling is done in the environment
+        self.meta_actions = 'meta_actions' in config and config['meta_actions']
+
+        if self.meta_actions: self.action_space = gym.spaces.Box(low=0, high=1, shape=(4,))
+        else: self.action_space = gym.spaces.Discrete(4)
 
     def step(self, action):
         """
@@ -71,11 +75,12 @@ class GridEnv(gym.Env):
         """
         if self.done: print('The environment is in a terminal state. Reset the environment before stepping')
 
-        # store the action distribution for the current state
-        current_state_number = self.state_number(self.position)
-        self.actions[str(current_state_number)] = action
-
-        action = np.random.choice(4, p=action)
+        # sample an actual action if meta actions are enabled
+        if self.meta_actions:
+            # store the action distribution for the current state
+            current_state_number = self.state_number(self.position)
+            self.actions[str(current_state_number)] = action
+            action = np.random.choice(4, p=action)
 
         delta_c = (2 - action) * (action % 2)
         delta_r = (1 - action) * ((action + 1) % 2)
@@ -109,10 +114,9 @@ class GridEnv(gym.Env):
         if not self.figure:
             plt.rcParams['toolbar'] = 'None'
 
-            self.figure = plt.figure(facecolor='white')
+            self.figure = plt.figure(facecolor='white', figsize=np.array(self.world.shape[:2]) * 1.2)
 
             self.axes = plt.Axes(self.figure, [0, 0, 1, 1])
-            self.axes.set_axis_off()
             self.figure.add_axes(self.axes)
 
             plt.get_current_fig_manager().set_window_title('Grid Environment')
@@ -120,6 +124,8 @@ class GridEnv(gym.Env):
             plt.show()
 
         self.axes.clear()
+        self.axes.set_axis_off()
+
         self.axes.hlines(np.arange(0.5, self.world.shape[0] - 1), -0.5, self.world.shape[1], color='k', linewidth=4)
         self.axes.vlines(np.arange(0.5, self.world.shape[1] - 1), -0.5, self.world.shape[0], color='k', linewidth=4)
 
@@ -179,7 +185,7 @@ if __name__ == '__main__':
             grid.reset()
             done = False
         else:
-            _, _, done, _ = grid.step([.25, .25, .25, .25])
+            _, _, done, _ = grid.step(np.random.choice(4))
 
         grid.render()
         time.sleep(.2)
