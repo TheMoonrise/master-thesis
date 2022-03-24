@@ -20,10 +20,11 @@ class GridEnv(gym.Env):
     Grid environment providing an interface for agent interaction.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, setup=None):
         """
         Loads the environment configuration.
         :param config: The config dict provided through the RlLib trainer.
+        :param setup: Optional json string replacing the grid configuration loaded from disc.
         """
         self.origins = []
         self.targets = []
@@ -37,8 +38,11 @@ class GridEnv(gym.Env):
 
         # read the configuration from the provided file
         # file is not checked for validity
-        with open(os.path.join(config['root'], config['grid_path'])) as file:
-            setup = json.loads(file.read().lower())
+        if not setup:
+            with open(os.path.join(config['root'], config['grid_path'])) as file:
+                setup = file.read()
+
+        setup = json.loads(setup.lower())
 
         # the world is defined as a list of strings
         # each string represents a row of the environment from left to right
