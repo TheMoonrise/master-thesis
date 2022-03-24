@@ -6,7 +6,7 @@ import torch
 import numpy as np
 
 from ray.rllib.agents.ppo import PPOTrainer
-from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy, ppo_surrogate_loss
+from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy, ppo_surrogate_loss, kl_and_loss_stats
 from ray.rllib.policy.sample_batch import SampleBatch
 # from ray.rllib.models.torch.torch_action_dist import TorchDirichlets
 from ray.rllib.evaluation.postprocessing import compute_gae_for_sample_batch
@@ -22,7 +22,8 @@ def risk_averse_policy():
         name='RiskAversePolicy',
         loss_fn=loss_fn,
         optimizer_fn=optimizer_fn,
-        postprocess_fn=postprocessing_fn
+        postprocess_fn=postprocessing_fn,
+        stats_fn=stats_fn
     )
 
     return policy
@@ -43,6 +44,21 @@ def risk_averse_trainer():
     return trainer
 
 
+def stats_fn(policy, train_batch):
+    """
+    Adds additional stats to the tracking.
+    This is called after the learn_on_batch functions.
+    :param policy: The policy that is being trained.
+    :param train_batch: The final train batch.
+    :return: A dictionary containing the policy stats.
+    """
+    stats = kl_and_loss_stats(policy, train_batch)
+    stats['moment_loss_1'] = train_batch['moment_loss_1'].item()
+    stats['moment_loss_2'] = train_batch['moment_loss_2'].item()
+
+    return stats
+
+
 def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=None):
     """
     Performs advantage computation. This adds risk values to each state reward.
@@ -61,13 +77,16 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
         # risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
         risk = torch.maximum(outs_p2 - torch.pow(outs_p1, 2.0), torch.tensor(0))
 
+        # check if risk is single value; if yes unsqueeze to match shape of rewards
+        sample_batch['risk'] = risk.numpy() if risk.shape else torch.unsqueeze(risk, 0).numpy()
+
         try:
             risk_factor = policy.config['model']['custom_model_config']['risk_factor']
         except:
             risk_factor = 1
 
-        sample_batch['CLEANREWARDS'] = sample_batch[SampleBatch.REWARDS].copy()
-        sample_batch[SampleBatch.REWARDS] -= risk.numpy() * risk_factor
+        sample_batch['clean_rewards'] = sample_batch[SampleBatch.REWARDS].copy()
+        sample_batch[SampleBatch.REWARDS] -= sample_batch['risk'] * risk_factor
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
 
@@ -110,24 +129,16 @@ def loss_fn(policy, model, dist_class, train_batch):
     # compute the loss for each of the risk estimation networks
     risk_in = torch.cat((train_batch[SampleBatch.OBS], train_batch[SampleBatch.ACTIONS]), 1)
 
-    trgt_p1 = train_batch['CLEANREWARDS']
+    trgt_p1 = train_batch['clean_rewards']
     outs_p1 = policy.model.risk_net_p1(risk_in).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
-    trgt_p2 = torch.pow(train_batch['CLEANREWARDS'], 2.0)
+    trgt_p2 = torch.pow(train_batch['clean_rewards'], 2.0)
     outs_p2 = policy.model.risk_net_p2(risk_in).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
-    demo_in = torch.tensor([[0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1]], dtype=torch.float32)
-
-    b = policy.model.risk_net_p2(demo_in).squeeze().detach().numpy()
-    a = policy.model.risk_net_p1(demo_in).squeeze().detach().numpy()
-
-    print('RISK CENTER (VARIANCE ESTIMATE)\n', np.round(b - np.power(a, 2), 2))
-    print('MEAN CENTER\n', np.round(a, 2))
+    train_batch['moment_loss_1'] = torch.unsqueeze(loss_p1.detach(), 0)
+    train_batch['moment_loss_2'] = torch.unsqueeze(loss_p2.detach(), 0)
 
     # compute the default loss value
     loss_surrogate = ppo_surrogate_loss(policy, model, dist_class, train_batch)

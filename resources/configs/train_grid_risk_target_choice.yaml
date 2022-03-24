@@ -19,3 +19,4 @@ risk-ppo:
         use_critic: true
         num_workers: 0
         framework: torch
+        log_level: ERROR

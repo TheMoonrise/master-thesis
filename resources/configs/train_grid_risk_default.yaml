@@ -2,7 +2,7 @@ risk-ppo:
     env: Gridworld
     run: PPO-RISK
     stop:
-        training_iteration: 50
+        training_iteration: 10
     config:
         model:
             custom_action_dist: Dirichlet
@@ -19,3 +19,4 @@ risk-ppo:
         use_critic: true
         num_workers: 0
         framework: torch
+        log_level: ERROR
