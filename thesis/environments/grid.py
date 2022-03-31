@@ -100,8 +100,8 @@ class GridEnv(gym.Env):
 
     def reset(self):
         """
-        Return the environment into the initial state
-        :return: The initial state
+        Return the environment into the initial state.
+        :return: The initial state.
         """
         self.position = np.array(self.origins[np.random.choice(len(self.origins))])
         self.done = False

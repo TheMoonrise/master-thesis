@@ -1,0 +1,20 @@
+risk-ppo:
+    env: Market
+    run: PPO
+    stop:
+        training_iteration: 25
+    config:
+        env_config:
+            data_path: .\resources\marketdata\data.csv
+            root: null
+            timeout: 0
+            episode_length: 288
+            transaction_fee: 0.002
+            validation_split: 0.085
+            is_validation: false
+            validation_output: .\checkpoints\validation_output_market_ppo.csv
+        use_gae: true
+        use_critic: true
+        num_workers: 0
+        framework: torch
+        log_level: ERROR

@@ -19,16 +19,16 @@ def grid_setup():
     The origin is defined as O.
     The target states are defined as T.
     A, B and C define different states with negative rewards.
-    :return: The setup dictionary
+    :return: The setup dictionary.
     """
     setup = {
         'grid': ['AAAT', 'OBBT', 'CCCT'],
         'origin': 'O',
         'target': 'T',
-        't': [1.0, 0.0],
+        't': [+1.0, 0.0],
         'o': [-0.1, 0.0],
         'a': [-1.0, 1.0],
-        'b': [-0.6, 5.0],
+        'b': [-0.6, 0.0],
         'c': [-1.0, 1.0]
     }
 

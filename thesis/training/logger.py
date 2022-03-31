@@ -12,4 +12,6 @@ class ProgressLogger(LoggerCallback):
     """
 
     def log_trial_result(self, iteration, trial, result):
-        print(f"Trial {trial}: {iteration}")
+        print('== Trial Result ==')
+        print(f'Trial {trial}: [{result["training_iteration"]}] mean reward {result["episode_reward_mean"]}')
+        print(' ')

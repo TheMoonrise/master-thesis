@@ -15,6 +15,7 @@ from ray.rllib.models import ModelCatalog
 
 from thesis.training.callbacks import CustomCallbacks
 from thesis.environments.grid import GridEnv
+from thesis.environments.market import MarketEnv
 from thesis.policies.ppo_risk_averse import risk_averse_trainer
 
 
@@ -34,6 +35,7 @@ class Setup:
 
         # register custom environments
         register_env('Gridworld', GridEnv)
+        register_env('Market', MarketEnv)
 
         # overwrite of the default TorchDirichlet action distribution.
         # default implementation throws and error:
