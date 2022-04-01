@@ -12,9 +12,12 @@ risk-ppo:
             transaction_fee: 0.002
             validation_split: 0.085
             is_validation: false
-            validation_output: .\checkpoints\validation_output_market_ppo.csv
+            validation_output: .\checkpoints\validation_output_market_attention_ppo.csv
+        model:
+            use_attention: true
         use_gae: true
         use_critic: true
         num_workers: 8
+        num_gpus: 1
         framework: torch
         log_level: ERROR

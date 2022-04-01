@@ -60,4 +60,6 @@ if __name__ == '__main__':
 
     # perform the training
     training(trainer, params['config'], params['stop'], checkpoint_path, args.name, args.resume)
+
+    setup.shutdown()
     print('Training completed')

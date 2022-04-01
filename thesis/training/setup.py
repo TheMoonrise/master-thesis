@@ -31,7 +31,7 @@ class Setup:
         Register custom models with the RlLib library.
         :param debug: Whether ray should be initialized in local mode for debugging.
         """
-        ray.init(local_mode=debug, logging_level='error')
+        ray.init(local_mode=debug, logging_level='error', log_to_driver=False)
 
         # register custom environments
         register_env('Gridworld', GridEnv)
@@ -47,6 +47,12 @@ class Setup:
                 return torch.distributions.kl.kl_divergence(o.dist, self.dist)
 
         ModelCatalog.register_custom_action_dist("Dirichlet", TorchDirichletPatch)
+
+    def shutdown(self):
+        """
+        Performs cleanup operations.
+        """
+        ray.shutdown()
 
     def parameters(self, path):
         """
