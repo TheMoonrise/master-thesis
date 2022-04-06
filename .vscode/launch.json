@@ -27,6 +27,21 @@
 				"31"
 			],
 			"justMyCode": false
+		},
+		{
+			"name": "Val PPO",
+			"type": "python",
+			"request": "launch",
+			"program": ".\\thesis\\training\\validate.py",
+			"console": "integratedTerminal",
+			"args": [
+				".\\resources\\configs\\train_market_default.yaml",
+				".\\checkpoints\\market_default\\PPO_Market_3ac91_00000_0_2022-04-06_11-16-23\\checkpoint_000025\\checkpoint-25",
+				"--debug",
+				"--episodes",
+				"31"
+			],
+			"justMyCode": true
 		}
 	]
 }

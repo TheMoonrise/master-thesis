@@ -2,7 +2,6 @@
 Implementation of a crypto trading environment.
 """
 
-from email import header
 import os
 import math
 from io import StringIO
@@ -16,6 +15,7 @@ class MarketEnv(gym.Env):
     """
     Market environment providing an interface for agent interaction.
     """
+    data_cache = {}
 
     def __init__(self, config, setup=None):
         """
@@ -34,29 +34,38 @@ class MarketEnv(gym.Env):
 
         self.is_training = 'is_validation' not in config or not config['is_validation']
 
-        # read the data csv file from disk if no market data was provided as string
-        if not setup:
-            with open(os.path.join(config['root'], config['data_path'])) as file:
-                setup = file.read()
+        read_from_file = not bool(setup)
 
-        # create a dataframe from the history crypto data
-        df = pd.read_csv(StringIO(setup))
-        self.coin_labels = ['STABLE'] + list(df.columns)[1:]
-        self.coin_count = len(self.coin_labels)
+        if not read_from_file or config['data_path'] not in MarketEnv.data_cache:
+            # read the data csv file from disk if no market data was provided as string
+            if read_from_file:
+                with open(os.path.join(config['root'], config['data_path'])) as file:
+                    setup = file.read()
+
+            # create a dataframe from the history crypto data
+            df = pd.read_csv(StringIO(setup))
+            self.coin_labels = ['STABLE'] + list(df.columns)[1:]
+
+            data = df.to_numpy()[:, 1:]
+            # insert a stable coin into the data matrix after the timestamp
+            data = np.insert(data, 0, 1, axis=1)
+
+            if read_from_file:
+                MarketEnv.data_cache[config['data_path']] = (data, self.coin_labels)
+
+        else:
+            # use cached market data to avoid loading multiple times
+            data = MarketEnv.data_cache[config['data_path']][0]
+            self.coin_labels = MarketEnv.data_cache[config['data_path']][1]
 
         # create a dataframe to store trajectories for validation
         self.trajectory = pd.DataFrame(columns=self.coin_labels + ['INVESTMENT', 'RETURN'], dtype=float)
         self.trajectory_output = config['validation_output'] if 'validation_output' in config else None
 
-        data = df.to_numpy()
-
         # remove timesteps and ensure the data fits into the episode length
         episode_count = data.shape[0] // config['episode_length']
         row_count = episode_count * config['episode_length']
-        data = data[:row_count, 1:]
-
-        # insert a stable coin after into the data matrix
-        data = np.insert(data, 0, 1, axis=1)
+        data = data[:row_count]
 
         # group the data by episode
         data = np.reshape(data, (episode_count, -1, data.shape[1]))
@@ -72,6 +81,7 @@ class MarketEnv(gym.Env):
         if (self.is_training): np.random.shuffle(self.order)
 
         # the observation space includes the values for all assets as well as the currently active asset
+        self.coin_count = len(self.coin_labels)
         self.observation_space = gym.spaces.Box(low=0, high=100_000, shape=(self.coin_count + 1,))
 
         # when meta actions are enabled the action sampling is done in the environment

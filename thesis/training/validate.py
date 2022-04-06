@@ -3,6 +3,7 @@ Validation of an agent.
 """
 
 import argparse
+from random import Random
 import time
 import torch
 

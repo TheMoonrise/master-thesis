@@ -55,6 +55,36 @@ def test_environment_steps(market_setup):
     assert all(state == np.array([1, 2.0, 200, 3823.2346034, 3, 0]))
 
 
+def test_environment_stable_coin(market_setup):
+    """
+    Tests whether the environments stable coin works correctly.
+    :param market_setup: The setup string for the environment.
+    """
+    config = {'episode_length': 7, 'validation_split': 0, 'transaction_fee': 0.3}
+    market_env = MarketEnv(config, market_setup)
+
+    market_env.reset()
+
+    _, reward, _, _ = market_env.step(0)
+    assert reward == 0
+
+    _, reward, _, _ = market_env.step(0)
+    assert reward == 0
+
+    _, reward, _, _ = market_env.step(0)
+    assert reward == 0
+
+    _, reward, _, _ = market_env.step(0)
+    assert reward == 0
+
+    _, reward, _, _ = market_env.step(0)
+    assert reward == 0
+
+    _, reward, done, _ = market_env.step(0)
+    assert reward == 0
+    assert done
+
+
 def test_environment_setup(market_setup):
     """
     Tests whether the environment performs the setup correctly.
