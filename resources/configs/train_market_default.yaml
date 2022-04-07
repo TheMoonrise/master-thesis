@@ -15,6 +15,7 @@ risk-ppo:
             validation_output: .\checkpoints\validation_output_market_ppo.csv
         use_gae: true
         use_critic: true
+        num_gpus: 1
         num_workers: 8
         framework: torch
         log_level: ERROR

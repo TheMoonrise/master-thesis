@@ -26,7 +26,7 @@ def training(trainer, config, stop, checkpoint_path, name, resume):
     """
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,
                         local_dir=checkpoint_path, resume=resume, name=name, verbose=Verbosity.V1_EXPERIMENT,
-                        callbacks=[ProgressLogger()])
+                        callbacks=[ProgressLogger()], checkpoint_freq=50)
 
     # return the analysis object
     return analysis

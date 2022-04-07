@@ -1,9 +1,14 @@
 risk-ppo:
     env: Market
-    run: PPO
+    run: PPO-RISK
     stop:
-        training_iteration: 500
+        training_iteration: 10
     config:
+        model:
+            custom_action_dist: Dirichlet
+            custom_model_config:
+                risk_factor: 1
+                risk_lr: 0.00005
         env_config:
             data_path: .\resources\marketdata\data.csv
             root: null
@@ -12,9 +17,9 @@ risk-ppo:
             transaction_fee: 0.002
             validation_split: 0.085
             is_validation: false
-            validation_output: .\checkpoints\validation_output_market_attention_ppo.csv
-        model:
-            use_attention: true
+            validation_output: .\checkpoints\validation_output_market_risk_attention_ppo.csv
+            meta_actions: true
+        normalize_actions: false
         use_gae: true
         use_critic: true
         num_gpus: 1

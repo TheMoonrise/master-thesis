@@ -78,7 +78,6 @@ class MarketEnv(gym.Env):
 
         # determine the order in which episodes are played
         self.order = np.arange(self.data.shape[0])
-        if (self.is_training): np.random.shuffle(self.order)
 
         # the observation space includes the values for all assets as well as the currently active asset
         self.coin_count = len(self.coin_labels)
@@ -139,6 +138,9 @@ class MarketEnv(gym.Env):
         For this the next episode in the sequence of episodes is sampled.
         :return: The initial state.
         """
+        if self.episode_index % self.order.shape[0] == 0:
+            if (self.is_training): np.random.shuffle(self.order)
+
         self.episode_index = (self.episode_index + 1) % self.order.shape[0]
         self.episode_progress = 0
         self.invest_index = 0

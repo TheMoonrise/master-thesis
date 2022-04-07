@@ -3,7 +3,6 @@ Validation of an agent.
 """
 
 import argparse
-from random import Random
 import time
 import torch
 
@@ -19,7 +18,7 @@ def validate(trainer, config, checkpoint, episodes):
     :param config: The training and validation configuration.
     :param checkpoint: The path to the checkpoint to restore the model from.
     :param episodes: The number of episodes to validate for.
-    If this value is <0 validation will continue indefinitely.
+    If this value is < 0 validation will continue indefinitely.
     """
     with torch.no_grad():
         # restore the agent from the checkpoint

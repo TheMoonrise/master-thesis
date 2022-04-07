@@ -70,9 +70,10 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
     """
     with torch.no_grad():
         risk_in = torch.from_numpy(np.concatenate((sample_batch[SampleBatch.OBS], sample_batch[SampleBatch.ACTIONS]), axis=1))
+        risk_in = risk_in.to(policy.device)
 
-        outs_p2 = policy.model.risk_net_p2(risk_in).squeeze()
-        outs_p1 = policy.model.risk_net_p1(risk_in).squeeze()
+        outs_p2 = policy.model.risk_net_p2(risk_in).squeeze().to('cpu')
+        outs_p1 = policy.model.risk_net_p1(risk_in).squeeze().to('cpu')
 
         # risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
         risk = torch.maximum(outs_p2 - torch.pow(outs_p1, 2.0), torch.tensor(0))
@@ -106,8 +107,8 @@ def optimizer_fn(policy, config):
     # these models must be part of the policy model for parameter assignment to work
     input_size = policy.observation_space.shape[0] + policy.action_space.shape[0]
 
-    policy.model.risk_net_p1 = risk_net(input_size, config)
-    policy.model.risk_net_p2 = risk_net(input_size, config)
+    policy.model.risk_net_p1 = risk_net(input_size, config).to(policy.device)
+    policy.model.risk_net_p2 = risk_net(input_size, config).to(policy.device)
 
     # define optimizers for each risk estimation model
     risk_lr = config['model']['custom_model_config']['risk_lr']
@@ -127,13 +128,14 @@ def loss_fn(policy, model, dist_class, train_batch):
     :return: The total loss value for optimization.
     """
     # compute the loss for each of the risk estimation networks
+    trgt_p1 = train_batch['clean_rewards']
+    trgt_p2 = torch.pow(trgt_p1, 2.0)
+
     risk_in = torch.cat((train_batch[SampleBatch.OBS], train_batch[SampleBatch.ACTIONS]), 1)
 
-    trgt_p1 = train_batch['clean_rewards']
     outs_p1 = policy.model.risk_net_p1(risk_in).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
-    trgt_p2 = torch.pow(train_batch['clean_rewards'], 2.0)
     outs_p2 = policy.model.risk_net_p2(risk_in).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
