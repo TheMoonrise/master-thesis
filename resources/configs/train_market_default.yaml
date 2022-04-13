@@ -13,6 +13,11 @@ risk-ppo:
             validation_split: 0.085
             is_validation: false
             validation_output: .\checkpoints\validation_output_market_ppo.csv
+        gamma: 0.99
+        lr: 0.0001
+        rollout_fragment_length: 287
+        train_batch_size: 2870
+
         use_gae: true
         use_critic: true
         num_gpus: 1

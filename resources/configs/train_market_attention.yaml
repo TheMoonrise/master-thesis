@@ -15,6 +15,11 @@ risk-ppo:
             validation_output: .\checkpoints\validation_output_market_attention_ppo.csv
         model:
             use_attention: true
+        gamma: 0.99
+        lr: 0.0001
+        rollout_fragment_length: 287
+        train_batch_size: 2870
+
         use_gae: true
         use_critic: true
         num_gpus: 1

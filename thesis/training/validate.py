@@ -75,7 +75,7 @@ def validate(trainer, config, checkpoint, episodes):
                 print((f'\rEpisode: {tracker[0]:0>3}'
                        f' Total Reward: {tracker[1]:<9.2f}'
                        f' Avg Reward: {avg_reward:<9.3f}'
-                       f' Variance: {variance:<9.3f}'), end='')
+                       f' Variance: {variance:<9.5f}'), end='')
 
                 env.render()
                 if sleep > 0: time.sleep(sleep)
