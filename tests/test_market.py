@@ -33,7 +33,7 @@ def test_environment_steps(market_setup):
     :param market_setup: The setup string for the environment.
     """
     fee = 0.1
-    config = {'episode_length': 3, 'validation_split': 1, 'is_validation': True, 'transaction_fee': fee}
+    config = {'episode_length': 3, 'validation_length': 7, 'is_validation': True, 'transaction_fee': fee}
     market_env = MarketEnv(config, market_setup)
 
     assert market_env.done
@@ -55,12 +55,37 @@ def test_environment_steps(market_setup):
     assert all(state == np.array([1, 2.0, 200, 3823.2346034, 3, 0]))
 
 
+def test_environment_validation(market_setup):
+    """
+    Tests whether the environment steps correctly.
+    :param market_setup: The setup string for the environment.
+    """
+    config = {'episode_length': 3, 'validation_length': 7, 'validation_step': 1, 'is_validation': True}
+    market_env = MarketEnv(config, market_setup)
+
+    assert market_env.done
+
+    state = market_env.reset()
+    assert all(state == np.array([1, 1.5, 100, 3856.2388934, 0, 0]))
+
+    state, _, done, _ = market_env.step(0)
+    assert all(state == np.array([1, 3.0, 200, 4078.2903476, 1, 0]))
+    assert not done
+
+    state, reward, done, _ = market_env.step(1)
+    assert all(state == np.array([1, 6.0, 100, 3998.9234796, 2, 1]))
+    assert done
+
+    state = market_env.reset()
+    assert all(state == np.array([1, 3.0, 200, 4078.2903476, 1, 0]))
+
+
 def test_environment_stable_coin(market_setup):
     """
     Tests whether the environments stable coin works correctly.
     :param market_setup: The setup string for the environment.
     """
-    config = {'episode_length': 7, 'validation_split': 0, 'transaction_fee': 0.3}
+    config = {'episode_length': 7, 'validation_length': 0, 'transaction_fee': 0.3}
     market_env = MarketEnv(config, market_setup)
 
     market_env.reset()
@@ -90,21 +115,20 @@ def test_environment_setup(market_setup):
     Tests whether the environment performs the setup correctly.
     :param market_setup: The setup string for the environment.
     """
-    config = {'episode_length': 7, 'validation_split': 0}
+    config = {'episode_length': 7, 'validation_length': 0}
     market_env = MarketEnv(config, market_setup)
-    assert market_env.data.shape == (1, 7, 5)
+    assert market_env.data.shape == (7, 5)
 
-    config = {'episode_length': 3, 'validation_split': 0.5}
+    config = {'episode_length': 3, 'validation_length': 3}
     market_env = MarketEnv(config, market_setup)
-    assert market_env.data.shape == (1, 3, 5)
+    assert market_env.data.shape == (4, 5)
 
-    config = {'episode_length': 2, 'validation_split': 0.4}
+    config = {'episode_length': 2, 'validation_length': 3}
     market_env = MarketEnv(config, market_setup)
-    assert market_env.data.shape == (2, 2, 5)
-    assert all(market_env.data[1, 0] == np.array([1, 6, 100, 3998.9234796, 2]))
+    assert market_env.data.shape == (4, 5)
+    assert all(market_env.data[2] == np.array([1, 6, 100, 3998.9234796, 2]))
 
-    config = {'episode_length': 2, 'validation_split': 0.8, 'is_validation': True}
+    config = {'episode_length': 2, 'validation_length': 5, 'is_validation': True}
     market_env = MarketEnv(config, market_setup)
-    assert market_env.data.shape == (2, 2, 5)
-    assert all(market_env.data[0, 0] == np.array([1, 6, 100, 3998.9234796, 2]))
-    assert all(market_env.order == np.arange(2))
+    assert market_env.data.shape == (5, 5)
+    assert all(market_env.data[0] == np.array([1, 6, 100, 3998.9234796, 2]))

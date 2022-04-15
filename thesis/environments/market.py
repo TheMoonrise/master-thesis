@@ -26,58 +26,20 @@ class MarketEnv(gym.Env):
         self.invest_index = 0
         self.done = True
 
-        self.episode_index = -1
+        self.episode_start = 0
+        self.episode_count = 0
         self.episode_progress = 0
 
         self.transaction_fee = 0.002 if 'transaction_fee' not in config else config['transaction_fee']
         if self.transaction_fee > 0: self.transaction_fee = math.log(1 - self.transaction_fee)
 
+        assert 'episode_length' in config
+        self.episode_length = config['episode_length']
+        self.validation_step = self.episode_length if 'validation_step' not in config else config['validation_step']
+
         self.is_training = 'is_validation' not in config or not config['is_validation']
 
-        read_from_file = not bool(setup)
-
-        if not read_from_file or config['data_path'] not in MarketEnv.data_cache:
-            # read the data csv file from disk if no market data was provided as string
-            if read_from_file:
-                with open(os.path.join(config['root'], config['data_path'])) as file:
-                    setup = file.read()
-
-            # create a dataframe from the history crypto data
-            df = pd.read_csv(StringIO(setup))
-            self.coin_labels = ['STABLE'] + list(df.columns)[1:]
-
-            data = df.to_numpy()[:, 1:]
-            # insert a stable coin into the data matrix after the timestamp
-            data = np.insert(data, 0, 1, axis=1)
-
-            if read_from_file:
-                MarketEnv.data_cache[config['data_path']] = (data, self.coin_labels)
-
-        else:
-            # use cached market data to avoid loading multiple times
-            data = MarketEnv.data_cache[config['data_path']][0]
-            self.coin_labels = MarketEnv.data_cache[config['data_path']][1]
-
-        # create a dataframe to store trajectories for validation
-        self.trajectory = pd.DataFrame(columns=self.coin_labels + ['INVESTMENT', 'RETURN'], dtype=float)
-        self.trajectory_output = config['validation_output'] if 'validation_output' in config else None
-
-        # remove timesteps and ensure the data fits into the episode length
-        episode_count = data.shape[0] // config['episode_length']
-        row_count = episode_count * config['episode_length']
-        data = data[:row_count]
-
-        # group the data by episode
-        data = np.reshape(data, (episode_count, -1, data.shape[1]))
-
-        # split the data into training and validation
-        validation_episodes = math.floor(episode_count * config['validation_split'])
-
-        self.data = data[:-validation_episodes] if self.is_training else data[-validation_episodes:]
-        if validation_episodes == 0: self.data = data
-
-        # determine the order in which episodes are played
-        self.order = np.arange(self.data.shape[0])
+        self.setup_environment_data(config, setup)
 
         # the observation space includes the values for all assets as well as the currently active asset
         self.coin_count = len(self.coin_labels)
@@ -88,6 +50,52 @@ class MarketEnv(gym.Env):
 
         if self.meta_actions: self.action_space = gym.spaces.Box(low=0, high=1, shape=(self.coin_count,))
         else: self.action_space = gym.spaces.Discrete(self.coin_count)
+
+    def setup_environment_data(self, config, setup):
+        """
+        Loads and processes the data for the environment.
+        :param config: The config dict provided through the RlLib trainer.
+        :param setup: Optional data string replacing the grid configuration loaded from disc.
+        """
+        if not setup:
+            assert 'data_path' in config
+            assert 'root' in config
+
+        if setup or config['data_path'] not in MarketEnv.data_cache:
+            data_string = setup
+
+            # read the data csv file from disk if no market data was provided as string
+            if not setup:
+                with open(os.path.join(config['root'], config['data_path'])) as file:
+                    data_string = file.read()
+
+            # create a dataframe from the history crypto data
+            df = pd.read_csv(StringIO(data_string))
+            self.coin_labels = ['STABLE'] + list(df.columns)[1:]
+
+            data = df.to_numpy()[:, 1:]
+            # insert a stable coin into the data matrix after the timestamp
+            data = np.insert(data, 0, 1, axis=1)
+
+            if not setup:
+                MarketEnv.data_cache[config['data_path']] = (data, self.coin_labels)
+
+        else:
+            # use cached market data to avoid loading multiple times
+            data = MarketEnv.data_cache[config['data_path']][0]
+            self.coin_labels = MarketEnv.data_cache[config['data_path']][1]
+
+        self.data = data
+
+        # create a dataframe to store trajectories for validation
+        self.trajectory = pd.DataFrame(columns=self.coin_labels + ['INVESTMENT', 'RETURN'], dtype=float)
+        self.trajectory_output = config['validation_output'] if 'validation_output' in config else None
+
+        # split the data into training and validation
+        validation_length = 0 if 'validation_length' not in config else config['validation_length']
+
+        if validation_length > 0:
+            self.data = self.data[:-validation_length] if self.is_training else self.data[-validation_length:]
 
     def step(self, action):
         """
@@ -110,10 +118,12 @@ class MarketEnv(gym.Env):
 
         # check if the end of the episode is reached
         self.episode_progress += 1
-        if (self.episode_progress >= self.data.shape[1] - 1): self.done = True
+        if (self.episode_progress >= self.episode_length - 1): self.done = True
 
-        last_state = self.data[self.order[self.episode_index], self.episode_progress - 1]
-        curr_state = self.data[self.order[self.episode_index], self.episode_progress]
+        state_index = min(self.episode_start + self.episode_progress, self.data.shape[0])
+
+        last_state = self.data[state_index - 1]
+        curr_state = self.data[state_index]
 
         # sample an action if using meta actions
         if self.meta_actions: action = np.random.choice(self.coin_count, p=action)
@@ -138,15 +148,21 @@ class MarketEnv(gym.Env):
         For this the next episode in the sequence of episodes is sampled.
         :return: The initial state.
         """
-        if self.episode_index % self.order.shape[0] == 0:
-            if (self.is_training): np.random.shuffle(self.order)
+        self.episode_start = np.random.choice(max(self.data.shape[0] - self.episode_length, 1))
 
-        self.episode_index = (self.episode_index + 1) % self.order.shape[0]
+        if not self.is_training:
+            self.episode_start = self.episode_count * self.validation_step
+
+            if self.episode_start + self.episode_length >= self.data.shape[0]:
+                print('Validation is exceeding the validation dataset size')
+
+        self.episode_count += 1
+
         self.episode_progress = 0
         self.invest_index = 0
         self.done = False
 
-        state = self.data[self.order[self.episode_index], 0]
+        state = self.data[self.episode_start]
         return np.concatenate((state, [self.invest_index]))
 
     def render(self, mode='human'):
