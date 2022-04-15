@@ -13,9 +13,10 @@ risk-ppo:
             data_path: .\resources\marketdata\data.csv
             root: null
             timeout: 0
-            episode_length: 288
             transaction_fee: 0.002
-            validation_split: 0.085
+            episode_length: 288
+            validation_length: 8928
+            validation_step: 288
             is_validation: false
             validation_output: .\checkpoints\validation_output_market_risk_attention_ppo.csv
             meta_actions: false

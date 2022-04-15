@@ -3,16 +3,19 @@ risk-ppo:
     run: PPO
     stop:
         training_iteration: 25
+
     config:
         env_config:
             data_path: .\resources\marketdata\data.csv
             root: null
             timeout: 0
-            episode_length: 288
             transaction_fee: 0.002
-            validation_split: 0.085
+            episode_length: 288
+            validation_length: 8928
+            validation_step: 288
             is_validation: false
             validation_output: .\checkpoints\validation_output_market_ppo.csv
+
         gamma: 0.99
         lr: 0.0001
         rollout_fragment_length: 287
