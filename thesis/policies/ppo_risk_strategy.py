@@ -9,12 +9,10 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy, ppo_surrogate_loss, kl_and_loss_stats, setup_mixins
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.policy.view_requirement import ViewRequirement
-# from ray.rllib.models.torch.torch_action_dist import TorchDirichlets
 from ray.rllib.evaluation.postprocessing import compute_gae_for_sample_batch
-# from ray.rllib.utils.torch_utils import explained_variance, sequence_mask
 
 
-def risk_averse_policy():
+def risk_averse_strategy_policy():
     """
     Builds a custom policy which includes risk averse action taking.
     :return: The policy class.
@@ -31,12 +29,12 @@ def risk_averse_policy():
     return policy
 
 
-def risk_averse_trainer():
+def risk_averse_strategy_trainer():
     """
     Wraps the risk averse policy into a trainer.
     :return: The trainer class for the custom risk averse policy.
     """
-    policy = risk_averse_policy()
+    policy = risk_averse_strategy_policy()
 
     trainer = PPOTrainer.with_updates(
         default_policy=policy,
@@ -70,7 +68,12 @@ def after_init(policy, obs_space, action_space, config):
     :param action_space: The action space of the policy.
     :config: The trainer configuration dict.
     """
+    stack_size = config['model']['custom_model_config']['risk_stack_size']
+
     policy.view_requirements['clean_rewards'] = ViewRequirement(data_col='rewards', shift=0)
+    policy.model.view_requirements['stacked_rewards'] = ViewRequirement(data_col='rewards', shift=f'-{stack_size}:-1')
+    policy.view_requirements.update(policy.model.view_requirements)
+
     setup_mixins(policy, obs_space, action_space, config)
 
 
@@ -84,21 +87,20 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
     :return: The updated batches dict.
     """
     with torch.no_grad():
-        actions = sample_batch[SampleBatch.ACTIONS]
-        if len(actions.shape) < 2: actions = np.reshape(actions, (-1, 1))
+        # print('\n\n', 'PREV REWARDS', sample_batch['stacked_rewards'])
+        sample_batch['acc_stacked_rewards'] = torch.from_numpy(np.sum(sample_batch['stacked_rewards'], axis=1))
 
-        risk_in = torch.from_numpy(np.concatenate((sample_batch[SampleBatch.OBS], actions), axis=1)).float()
-        sample_batch['risk_input'] = risk_in.to(policy.device)
+        zero_input = torch.tensor([0.0]).to(policy.device)
+        outs_p2 = policy.model.risk_net_p2(zero_input).squeeze().to('cpu')
+        outs_p1 = policy.model.risk_net_p1(zero_input).squeeze().to('cpu')
 
-        outs_p2 = policy.model.risk_net_p2(sample_batch['risk_input']).squeeze().to('cpu')
-        outs_p1 = policy.model.risk_net_p1(sample_batch['risk_input']).squeeze().to('cpu')
-
-        # risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
         risk = torch.maximum(outs_p2 - torch.pow(outs_p1, 2.0), torch.tensor(0))
         risk_factor = policy.config['model']['custom_model_config']['risk_factor']
 
         # check if risk is single value; if yes unsqueeze to match shape of rewards
-        sample_batch['risk'] = risk.numpy() if risk.shape else torch.unsqueeze(risk, 0).numpy()
+        sample_batch['risk'] = np.ones_like(sample_batch[SampleBatch.REWARDS]) * risk.item()
+
+        # rewards = sample_batch[SampleBatch.REWARDS].copy() - sample_batch['risk'] * risk_factor
         sample_batch[SampleBatch.REWARDS] -= sample_batch['risk'] * risk_factor
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
@@ -111,18 +113,13 @@ def optimizer_fn(policy, config):
     :param config: The configuration dictionary of the training.
     :return: A torch optimizer.
     """
-
     # generate the default optimizer for the policy net
     optim = torch.optim.Adam(policy.model.parameters(), lr=config["lr"])
 
     # attache the risk estimation models to the policy model
     # these models must be part of the policy model for parameter assignment to work
-    action_size = policy.action_space.shape[0] if policy.action_space.shape else 1
-    observation_size = policy.observation_space.shape[0]
-    input_size = observation_size + action_size
-
-    policy.model.risk_net_p1 = risk_net(input_size, config).to(policy.device)
-    policy.model.risk_net_p2 = risk_net(input_size, config).to(policy.device)
+    policy.model.risk_net_p1 = risk_net(1, config).to(policy.device)
+    policy.model.risk_net_p2 = risk_net(1, config).to(policy.device)
 
     # define optimizers for each risk estimation model
     risk_lr = config['model']['custom_model_config']['risk_lr']
@@ -142,13 +139,15 @@ def loss_fn(policy, model, dist_class, train_batch):
     :return: The total loss value for optimization.
     """
     # compute the loss for each of the risk estimation networks
-    trgt_p1 = train_batch['clean_rewards']
+    trgt_p1 = train_batch['acc_stacked_rewards']
     trgt_p2 = torch.pow(trgt_p1, 2.0)
 
-    outs_p1 = policy.model.risk_net_p1(train_batch['risk_input']).squeeze()
+    zero_input = torch.zeros_like(trgt_p1).unsqueeze(1).to(policy.device)
+
+    outs_p1 = policy.model.risk_net_p1(zero_input).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
-    outs_p2 = policy.model.risk_net_p2(train_batch['risk_input']).squeeze()
+    outs_p2 = policy.model.risk_net_p2(zero_input).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
     train_batch['moment_loss_1'] = torch.unsqueeze(loss_p1.detach(), 0)
@@ -169,9 +168,7 @@ def risk_net(input_size, config):
     :returns: A pytorch model with the shape of input_size : 1
     """
     return torch.nn.Sequential(
-        torch.nn.Linear(input_size, 64),
-        torch.nn.ReLU(),
-        torch.nn.Linear(64, 16),
+        torch.nn.Linear(input_size, 16),
         torch.nn.ReLU(),
         torch.nn.Linear(16, 1)
     )

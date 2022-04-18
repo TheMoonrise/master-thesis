@@ -17,6 +17,7 @@ from thesis.training.callbacks import CustomCallbacks
 from thesis.environments.grid import GridEnv
 from thesis.environments.market import MarketEnv
 from thesis.policies.ppo_risk_averse import risk_averse_trainer
+from thesis.policies.ppo_risk_strategy import risk_averse_strategy_trainer
 
 
 class Setup:
@@ -85,5 +86,6 @@ class Setup:
         :return: The trainer class for the input parameters. Default return is vanilla ppo.
         """
         if model == 'PPO-RISK': return risk_averse_trainer()
+        if model == 'PPO-RA-STRATEGY': return risk_averse_strategy_trainer()
         if model == 'PPO': return PPOTrainer
         raise Exception(f'Model {model} not implemented')

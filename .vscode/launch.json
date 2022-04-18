@@ -9,8 +9,17 @@
 			"type": "python",
 			"request": "launch",
 			"program": ".\\thesis\\training\\train.py",
-			"console": "integratedTerminal",
+			"console": "externalTerminal",
 			"args": [".\\resources\\configs\\train_grid_risk_default.yaml", "--debug", "--name", "debugging"],
+			"justMyCode": false
+		},
+		{
+			"name": "RA Strategy",
+			"type": "python",
+			"request": "launch",
+			"program": ".\\thesis\\training\\train.py",
+			"console": "externalTerminal",
+			"args": [".\\resources\\configs\\train_market_rastrategy_attention.yaml", "--debug", "--name", "debugging"],
 			"justMyCode": false
 		},
 		{
@@ -18,7 +27,7 @@
 			"type": "python",
 			"request": "launch",
 			"program": ".\\thesis\\training\\validate.py",
-			"console": "integratedTerminal",
+			"console": "externalTerminal",
 			"args": [
 				".\\resources\\configs\\train_market_attention.yaml",
 				".\\checkpoints\\market\\PPO_Market_2cc4a_00000_0_2022-03-31_09-35-44\\checkpoint_000025\\checkpoint-25",
@@ -33,7 +42,7 @@
 			"type": "python",
 			"request": "launch",
 			"program": ".\\thesis\\training\\validate.py",
-			"console": "integratedTerminal",
+			"console": "externalTerminal",
 			"args": [
 				".\\resources\\configs\\train_market_default.yaml",
 				".\\checkpoints\\market_default\\PPO_Market_3ac91_00000_0_2022-04-06_11-16-23\\checkpoint_000025\\checkpoint-25",
