@@ -1,6 +1,7 @@
 risk-ppo:
     env: Market
     run: PPO
+    name: MRK PPO DEF
 
     # samples: 6
     samples: 1
@@ -12,7 +13,7 @@ risk-ppo:
         env_config:
             root: null
             data_path: .\resources\marketdata\data.csv
-            validation_output: .\checkpoints\validation_output_market_ppo.csv
+            validation_output: .\checkpoints\validation_market_ppo_default.csv
             timeout: 0
             transaction_fee: 0.002
             episode_length: 288

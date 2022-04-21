@@ -13,7 +13,7 @@ from thesis.training.setup import Setup
 from thesis.training.logger import ProgressLogger
 
 
-def training(trainer, config, stop, samples, checkpoint_path, name, resume):
+def training(trainer, config, stop, samples, checkpoint_path, name, resume, offline):
     """
     Performs a training run using tune.
     :param trainer: The trainer class to be used for the training.
@@ -23,18 +23,22 @@ def training(trainer, config, stop, samples, checkpoint_path, name, resume):
     :param checkpoint_path: The path where to save the checkpoints to.
     :param name: The name of the training run.
     :param resume: Whether a previous run with the same name should be resumed.
+    :param offline: Whether wandb logging should be disabled.
     :return: The analysis containing training results.
     """
-    # configure logging to weights & biases
-    wandb_key = os.path.join(os.path.dirname(__file__), '..', '..', 'wandb.key')
+    callbacks = [ProgressLogger()]
 
-    # for wandb to work the file ./ray/tune/integration/wandb.py must be modified
-    # in os.environ["WANDB_START_METHOD"] = "fork" the fork must be replaced by thread for windows
-    wandb = WandbLoggerCallback('master thesis', api_key_file=wandb_key, log_config=False)
+    if not offline:
+        # configure logging to weights & biases
+        wandb_key = os.path.join(os.path.dirname(__file__), '..', '..', 'wandb.key')
+
+        # for wandb to work the file ./ray/tune/integration/wandb.py must be modified
+        # in os.environ["WANDB_START_METHOD"] = "fork" the fork must be replaced by thread for windows
+        callbacks.append(WandbLoggerCallback('master thesis', api_key_file=wandb_key, log_config=False, group=name))
 
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,
                         local_dir=checkpoint_path, resume=resume, name=name, verbose=Verbosity.V1_EXPERIMENT,
-                        callbacks=[ProgressLogger(), wandb], checkpoint_freq=50, num_samples=samples)
+                        callbacks=callbacks, checkpoint_freq=50, num_samples=samples)
 
     # return the analysis object
     return analysis
@@ -48,6 +52,7 @@ if __name__ == '__main__':
     parse.add_argument('--name', help='The name of the experiment', type=str)
     parse.add_argument('--resume', help='Whether a previous run should be resumed', action='store_true')
     parse.add_argument('--debug', help='When set training is single threaded', action='store_true')
+    parse.add_argument('--offline', help='When set wandb logging is disabled', action='store_true')
 
     args = parse.parse_args()
 
@@ -68,7 +73,8 @@ if __name__ == '__main__':
     trainer = setup.trainer(params['run'])
 
     # perform the training
-    training(trainer, params['config'], params['stop'], params['samples'], checkpoint_path, args.name, args.resume)
+    name = args.name or params['name'] if 'name' in params else None
+    training(trainer, params['config'], params['stop'], params['samples'], checkpoint_path, name, args.resume, args.offline)
 
     setup.shutdown()
     print('Training completed')

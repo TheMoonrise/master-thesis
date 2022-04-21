@@ -1,14 +1,18 @@
 risk-ppo:
     env: Market
     run: PPO-RISK
+    name: MRK PPO ATT RAA
+
     stop:
         training_iteration: 2
+
     config:
         model:
             use_attention: true
             custom_model_config:
                 risk_factor: 1
                 risk_lr: 0.00005
+
         env_config:
             data_path: .\resources\marketdata\data.csv
             root: null
@@ -18,17 +22,22 @@ risk-ppo:
             validation_length: 8928
             validation_step: 288
             is_validation: false
-            validation_output: .\checkpoints\validation_output_market_risk_attention_ppo.csv
+            validation_output: .\checkpoints\validation_ppo_attention_raactions.csv
             meta_actions: false
 
         gamma: 0.99
         lr: 0.0001
+        lambda: 1.0
+        kl_coeff: 0.2
+        vf_loss_coeff: 1.0
+        entropy_coeff: 0.0
+        clip_param: 0.3
+        vf_clip_param: 10.0
+
         use_gae: true
         use_critic: true
-        rollout_fragment_length: 287
-        train_batch_size: 2870
-
-        num_gpus: 1
-        num_workers: 8
+        batch_mode: complete_episodes
+        num_gpus: 0.9
+        num_workers: 0
         framework: torch
         log_level: ERROR

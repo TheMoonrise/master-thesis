@@ -23,6 +23,7 @@ params          The path to the configuration YAML file.
 --name          Names the training run.
                 This helps finding the training results and allows for runs to be resumed.
 --resume        Resumes a previously started training.
+--offline       When set no Weights & Biases logging is used.
 ```
 
 ### Validation
