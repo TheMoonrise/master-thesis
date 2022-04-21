@@ -21,10 +21,6 @@ def validate(trainer, config, checkpoint, episodes):
     If this value is < 0 validation will continue indefinitely.
     """
     with torch.no_grad():
-        # restore the agent from the checkpoint
-        agent = trainer(config=config)
-        agent.restore(checkpoint)
-
         # env = GridEnv(config['env_config'])
         env_config = config['env_config'] if 'env_config' in config else {}
         if 'is_validation' in env_config: env_config['is_validation'] = True
@@ -33,6 +29,10 @@ def validate(trainer, config, checkpoint, episodes):
 
         # check if rnn functionality is used
         is_rnn = 'model' in config and 'use_attention' in config['model'] and config['model']['use_attention']
+
+        # restore the agent from the checkpoint
+        agent = trainer(config=config)
+        agent.restore(checkpoint)
 
         attention_dim = agent.get_policy().config['model']['attention_dim'] if is_rnn else 1
         state_rnn = [np.zeros((1, attention_dim))]

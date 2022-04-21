@@ -7,6 +7,7 @@ import yaml
 import torch
 
 import ray
+from ray import tune
 from ray.tune.registry import register_env
 from ray.rllib.agents.ppo import PPOTrainer
 
@@ -69,6 +70,9 @@ class Setup:
         # remove the first layer of the preferences
         prefs = prefs[list(prefs.keys())[0]]
 
+        # add the default samples value
+        if 'samples' not in prefs: prefs['samples'] = 1
+
         # modify configuration keys
         prefs['config']['env'] = prefs['env']
         prefs['config']['callbacks'] = CustomCallbacks
@@ -76,6 +80,24 @@ class Setup:
         # add the project root path to the config
         if 'env_config' in prefs['config'] and 'root' in prefs['config']['env_config']:
             prefs['config']['env_config']['root'] = prefs['config']['env_config']['root'] or os.getcwd()
+
+        return prefs
+
+    def hyperparameter_tuning(self, prefs):
+        """
+        Adds tune hyperparameter search to the preferences.
+        The configuration is scanned for expressions to be evaluated.
+        Any hyperparameter expression found is resolved to the actual object.
+        :param prefs: The configuration dictionary to modify.
+        :return: The modified prefs dictionary.
+        """
+        # training gets stuck if the number of trials * number of workers per trial exceeds the number of cup cores
+        # it seems like after a trial terminates the cpu core is not "released"
+        # when all cores have been used once the training get's stuck
+        # TODO: find a solution for this
+        for k, v in prefs['config'].items():
+            if not isinstance(v, str) or not v.startswith('tune.'): continue
+            prefs['config'][k] = eval(v)
 
         return prefs
 

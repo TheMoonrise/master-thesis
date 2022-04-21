@@ -4,6 +4,7 @@ cartpole-ppo:
     stop:
         episode_reward_mean: 150
         timesteps_total: 100000
+        training_iteration: 2
     config:
         # Works for both torch and tf.
         framework: torch
@@ -18,3 +19,6 @@ cartpole-ppo:
             fcnet_hiddens: [32]
             fcnet_activation: linear
             vf_share_layers: true
+
+        num_gpus: 0
+        num_workers: 2

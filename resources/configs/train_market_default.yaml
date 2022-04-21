@@ -1,29 +1,44 @@
 risk-ppo:
     env: Market
     run: PPO
+
+    # samples: 6
+    samples: 1
+
     stop:
-        training_iteration: 25
+        training_iteration: 2
 
     config:
         env_config:
-            data_path: .\resources\marketdata\data.csv
             root: null
+            data_path: .\resources\marketdata\data.csv
+            validation_output: .\checkpoints\validation_output_market_ppo.csv
             timeout: 0
             transaction_fee: 0.002
             episode_length: 288
             validation_length: 8928
             validation_step: 288
             is_validation: false
-            validation_output: .\checkpoints\validation_output_market_ppo.csv
 
-        gamma: 0.99
-        lr: 0.0001
-        rollout_fragment_length: 287
-        train_batch_size: 2870
+        # gamma: 0.99
+        gamma: tune.uniform(0.9, 0.999)
+        # lr: 0.0001
+        lr: tune.uniform(1e-5, 1e-4)
+        # lambda: 1.0
+        lambda: tune.uniform(0.8, 1)
+        kl_coeff: 0.2
+        vf_loss_coeff: 1.0
+        # entropy_coeff: 0.0
+        entropy_coeff: tune.uniform(0, 0.5)
+        # clip_param: 0.3
+        clip_param: tune.grid_search([0.2, 0.3])
+        # vf_clip_param: 10.0
+        vf_clip_param: tune.uniform(1, 10)
 
         use_gae: true
         use_critic: true
-        num_gpus: 1
-        num_workers: 8
+        batch_mode: complete_episodes
+        num_gpus: 0.3
+        num_workers: 0
         framework: torch
         log_level: ERROR
