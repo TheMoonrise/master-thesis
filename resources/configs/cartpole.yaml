@@ -4,7 +4,6 @@ cartpole-ppo:
     stop:
         episode_reward_mean: 150
         timesteps_total: 100000
-        training_iteration: 2
     config:
         # Works for both torch and tf.
         framework: torch

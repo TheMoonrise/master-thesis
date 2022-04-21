@@ -7,7 +7,7 @@ import os
 
 from ray import tune
 from ray.tune.utils.log import Verbosity
-
+from ray.tune.integration.wandb import WandbLoggerCallback
 
 from thesis.training.setup import Setup
 from thesis.training.logger import ProgressLogger
@@ -25,9 +25,16 @@ def training(trainer, config, stop, samples, checkpoint_path, name, resume):
     :param resume: Whether a previous run with the same name should be resumed.
     :return: The analysis containing training results.
     """
+    # configure logging to weights & biases
+    wandb_key = os.path.join(os.path.dirname(__file__), '..', '..', 'wandb.key')
+
+    # for wandb to work the file ./ray/tune/integration/wandb.py must be modified
+    # in os.environ["WANDB_START_METHOD"] = "fork" the fork must be replaced by thread for windows
+    wandb = WandbLoggerCallback('master thesis', api_key_file=wandb_key, log_config=False)
+
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,
                         local_dir=checkpoint_path, resume=resume, name=name, verbose=Verbosity.V1_EXPERIMENT,
-                        callbacks=[ProgressLogger()], checkpoint_freq=50, num_samples=samples)
+                        callbacks=[ProgressLogger(), wandb], checkpoint_freq=50, num_samples=samples)
 
     # return the analysis object
     return analysis

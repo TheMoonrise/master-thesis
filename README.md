@@ -52,6 +52,12 @@ To visualize the results of training runs Tensorboard can be used. The training 
 tensorboard --logdir <path to run or experiment folder>
 ```
 
+## Weights & Balances
+
+The training results are also logged to Weights & Balances. For this a valid api key must be placed in a file named `wandb.key` at the root of the project. Additionally a project names `master thesis` must be available as a logging target.
+
+Note that for this to work on Windows some changes had to be made to the wandb RlLib integration. Depending on the platform these steps must be repeated after project setup. Please refer to `train.py` for more information.
+
 ## Scripts
 
 The `crypto_data_cleanup.py` script takes the raw crypto data from Bitfinex and converts it into a single dataset.
