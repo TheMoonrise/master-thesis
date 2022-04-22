@@ -30,10 +30,15 @@ def training(trainer, config, stop, samples, checkpoint_path, name, restore, off
 
     if not offline:
         # configure logging to weights & biases
-        wandb_key = os.path.join(os.path.dirname(__file__), '..', '..', 'wandb.key')
-
         # for wandb to work the file ./ray/tune/integration/wandb.py must be modified
         # in os.environ["WANDB_START_METHOD"] = "fork" the fork must be replaced by thread for windows
+        wandb_key = os.path.join(os.path.dirname(__file__), '..', '..', 'wandb.key')
+
+        # the wandb extension seems to cause bluescreens on my machine
+        # according to the memory dump this is related to illegal memory writes of the graphics card driver
+        # this happen during regular training and when aborting runs
+        # because of this wandb is not really useful at this point in time
+        # TODO: investigate bluescreen page fault in nonpaged area nvlddmkm.sys caused by python.exe
         callbacks.append(WandbLoggerCallback('MasterThesis', api_key_file=wandb_key, log_config=False, group=name))
 
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,

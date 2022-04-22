@@ -95,10 +95,13 @@ class Setup:
         # it seems like after a trial terminates the cpu core is not "released"
         # when all cores have been used once the training get's stuck
         # TODO: find a solution for this
-        for k, v in prefs['config'].items():
-            if not isinstance(v, str) or not v.startswith('tune.'): continue
-            prefs['config'][k] = eval(v)
+        def update_dict(dictionary):
+            for k, v in dictionary.items():
+                if isinstance(v, dict): update_dict(v)
+                if not isinstance(v, str) or not v.startswith('tune.'): continue
+                dictionary[k] = eval(v)
 
+        update_dict(prefs['config'])
         return prefs
 
     def trainer(self, model):
