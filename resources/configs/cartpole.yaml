@@ -1,9 +1,14 @@
 cartpole-ppo:
     env: CartPole-v0
     run: PPO
+    name: CRP PPO DEF
+
+    samples: 1
+
     stop:
         episode_reward_mean: 150
         timesteps_total: 100000
+
     config:
         # Works for both torch and tf.
         framework: torch
@@ -14,10 +19,11 @@ cartpole-ppo:
         num_sgd_iter: 6
         vf_loss_coeff: 0.01
         log_level: ERROR
+
         model:
             fcnet_hiddens: [32]
             fcnet_activation: linear
             vf_share_layers: true
 
         num_gpus: 0
-        num_workers: 2
+        num_workers: 0

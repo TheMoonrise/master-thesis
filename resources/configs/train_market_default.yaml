@@ -3,10 +3,10 @@ risk-ppo:
     run: PPO
     name: MRK PPO DEF
 
-    samples: 6
+    samples: 3
 
     stop:
-        training_iteration: 200
+        training_iteration: 1000
 
     config:
         env_config:
@@ -23,22 +23,22 @@ risk-ppo:
         gamma: 0.98
         # gamma: tune.uniform(0.9, 0.999)
         # lr: 0.0001
-        lr: tune.uniform(1e-5, 1e-4)
+        lr: tune.uniform(1e-5, 5e-5)
         # lambda: 1.0
         lambda: tune.uniform(0.8, 1)
         kl_coeff: 0.2
         vf_loss_coeff: 1.0
         # entropy_coeff: 0.0
-        entropy_coeff: tune.uniform(0, 0.5)
+        entropy_coeff: tune.uniform(0, 0.1)
         clip_param: 0.2
         # clip_param: tune.grid_search([0.2, 0.3])
         # vf_clip_param: 10.0
-        vf_clip_param: tune.uniform(1, 10)
+        vf_clip_param: tune.uniform(2, 10)
 
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 0.3
+        num_gpus: 0.28
         num_workers: 0
         framework: torch
         log_level: ERROR
