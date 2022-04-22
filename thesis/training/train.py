@@ -34,7 +34,7 @@ def training(trainer, config, stop, samples, checkpoint_path, name, resume, offl
 
         # for wandb to work the file ./ray/tune/integration/wandb.py must be modified
         # in os.environ["WANDB_START_METHOD"] = "fork" the fork must be replaced by thread for windows
-        callbacks.append(WandbLoggerCallback('master thesis', api_key_file=wandb_key, log_config=False, group=name))
+        callbacks.append(WandbLoggerCallback('MasterThesis', api_key_file=wandb_key, log_config=False, group=name))
 
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,
                         local_dir=checkpoint_path, resume=resume, name=name, verbose=Verbosity.V1_EXPERIMENT,
@@ -74,7 +74,9 @@ if __name__ == '__main__':
 
     # perform the training
     name = args.name or params['name'] if 'name' in params else None
-    training(trainer, params['config'], params['stop'], params['samples'], checkpoint_path, name, args.resume, args.offline)
+    offline = args.offline or args.debug
+
+    training(trainer, params['config'], params['stop'], params['samples'], checkpoint_path, name, args.resume, offline)
 
     setup.shutdown()
     print('Training completed')

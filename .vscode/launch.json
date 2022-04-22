@@ -5,16 +5,25 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Risk Default",
+			"name": "MRK DEF RAA META",
 			"type": "python",
 			"request": "launch",
 			"program": ".\\thesis\\training\\train.py",
 			"console": "externalTerminal",
-			"args": [".\\resources\\configs\\train_grid_risk_default.yaml", "--debug", "--name", "debugging"],
+			"args": [".\\resources\\configs\\train_market_risk_default_meta.yaml", "--debug", "--name", "debugging"],
 			"justMyCode": false
 		},
 		{
-			"name": "RA Strategy",
+			"name": "MRK DEF",
+			"type": "python",
+			"request": "launch",
+			"program": ".\\thesis\\training\\train.py",
+			"console": "externalTerminal",
+			"args": [".\\resources\\configs\\train_market_default.yaml", "--debug", "--name", "debugging"],
+			"justMyCode": false
+		},
+		{
+			"name": "MRK ATT RAS",
 			"type": "python",
 			"request": "launch",
 			"program": ".\\thesis\\training\\train.py",
@@ -23,7 +32,7 @@
 			"justMyCode": false
 		},
 		{
-			"name": "Val PPO-Attn",
+			"name": "VAL MRK ATT",
 			"type": "python",
 			"request": "launch",
 			"program": ".\\thesis\\training\\validate.py",
@@ -38,7 +47,7 @@
 			"justMyCode": false
 		},
 		{
-			"name": "Val PPO",
+			"name": "Val MRK DEF",
 			"type": "python",
 			"request": "launch",
 			"program": ".\\thesis\\training\\validate.py",

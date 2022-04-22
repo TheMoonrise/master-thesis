@@ -3,11 +3,10 @@ risk-ppo:
     run: PPO
     name: MRK PPO DEF
 
-    # samples: 6
-    samples: 1
+    samples: 6
 
     stop:
-        training_iteration: 2
+        training_iteration: 200
 
     config:
         env_config:
@@ -21,8 +20,8 @@ risk-ppo:
             validation_step: 288
             is_validation: false
 
-        # gamma: 0.99
-        gamma: tune.uniform(0.9, 0.999)
+        gamma: 0.98
+        # gamma: tune.uniform(0.9, 0.999)
         # lr: 0.0001
         lr: tune.uniform(1e-5, 1e-4)
         # lambda: 1.0
@@ -31,8 +30,8 @@ risk-ppo:
         vf_loss_coeff: 1.0
         # entropy_coeff: 0.0
         entropy_coeff: tune.uniform(0, 0.5)
-        # clip_param: 0.3
-        clip_param: tune.grid_search([0.2, 0.3])
+        clip_param: 0.2
+        # clip_param: tune.grid_search([0.2, 0.3])
         # vf_clip_param: 10.0
         vf_clip_param: tune.uniform(1, 10)
 
