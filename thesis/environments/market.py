@@ -51,8 +51,6 @@ class MarketEnv(gym.Env):
         if self.meta_actions: self.action_space = gym.spaces.Box(low=0, high=1, shape=(self.coin_count,))
         else: self.action_space = gym.spaces.Discrete(self.coin_count)
 
-        print('\n\nMARKET SETUP\n')
-
     def setup_environment_data(self, config, setup):
         """
         Loads and processes the data for the environment.

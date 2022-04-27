@@ -41,3 +41,5 @@ risk-ppo:
         num_workers: 0
         framework: torch
         log_level: ERROR
+
+        normalize_actions: false
