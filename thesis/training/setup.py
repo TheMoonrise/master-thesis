@@ -84,7 +84,8 @@ class Setup:
 
         # add the project root path to the config
         if 'env_config' in prefs['config'] and 'root' in prefs['config']['env_config']:
-            prefs['config']['env_config']['root'] = prefs['config']['env_config']['root'] or os.getcwd()
+            root = os.path.join(os.path.dirname(__file__), '..', '..')
+            prefs['config']['env_config']['root'] = prefs['config']['env_config']['root'] or root
 
         return prefs
 

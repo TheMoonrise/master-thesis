@@ -39,7 +39,8 @@ class GridEnv(gym.Env):
         # read the configuration from the provided file
         # file is not checked for validity
         if not setup:
-            with open(os.path.join(config['root'], config['grid_path'])) as file:
+            grid_path = config['grid_path'].replace('\\', '/')
+            with open(os.path.join(config['root'], grid_path)) as file:
                 setup = file.read()
 
         setup = json.loads(setup.lower())

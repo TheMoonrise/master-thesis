@@ -68,7 +68,8 @@ class MarketEnv(gym.Env):
 
             # read the data csv file from disk if no market data was provided as string
             if not setup:
-                with open(os.path.join(config['root'], config['data_path'])) as file:
+                data_path = config['data_path'].replace('\\', '/')
+                with open(os.path.join(config['root'], data_path)) as file:
                     data_string = file.read()
 
             # create a dataframe from the history crypto data
@@ -91,7 +92,7 @@ class MarketEnv(gym.Env):
 
         # create a dataframe to store trajectories for validation
         self.trajectory = pd.DataFrame(columns=self.coin_labels + ['INVESTMENT', 'RETURN'], dtype=float)
-        self.trajectory_output = config['validation_output'] if 'validation_output' in config else None
+        self.trajectory_output = config['validation_output'].replace('\\', '/') if 'validation_output' in config else None
 
         # split the data into training and validation
         validation_length = 0 if 'validation_length' not in config else config['validation_length']
