@@ -3,7 +3,7 @@ risk-ppo:
     run: PPO-RISK
     name: MRK PPO ATT RAA META
 
-    samples: 1
+    samples: 5
 
     stop:
         training_iteration: 10000

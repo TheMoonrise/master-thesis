@@ -87,11 +87,10 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
         actions = sample_batch[SampleBatch.ACTIONS]
         if len(actions.shape) < 2: actions = np.reshape(actions, (-1, 1))
 
-        risk_in = torch.from_numpy(np.concatenate((sample_batch[SampleBatch.OBS], actions), axis=1)).float()
-        sample_batch['risk_input'] = risk_in.to(policy.device)
+        sample_batch['risk_input'] = torch.from_numpy(np.concatenate((sample_batch[SampleBatch.OBS], actions), axis=1)).float()
 
-        outs_p2 = policy.model.risk_net_p2(sample_batch['risk_input']).squeeze().to('cpu')
-        outs_p1 = policy.model.risk_net_p1(sample_batch['risk_input']).squeeze().to('cpu')
+        outs_p2 = policy.model.risk_net_p2(sample_batch['risk_input'].to(policy.device)).squeeze().cpu()
+        outs_p1 = policy.model.risk_net_p1(sample_batch['risk_input'].to(policy.device)).squeeze().cpu()
 
         # risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
         risk = torch.maximum(outs_p2 - torch.pow(outs_p1, 2.0), torch.tensor(0))
@@ -145,10 +144,10 @@ def loss_fn(policy, model, dist_class, train_batch):
     trgt_p1 = train_batch['clean_rewards']
     trgt_p2 = torch.pow(trgt_p1, 2.0)
 
-    outs_p1 = policy.model.risk_net_p1(train_batch['risk_input']).squeeze()
+    outs_p1 = policy.model.risk_net_p1(train_batch['risk_input'].to(policy.device)).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
-    outs_p2 = policy.model.risk_net_p2(train_batch['risk_input']).squeeze()
+    outs_p2 = policy.model.risk_net_p2(train_batch['risk_input'].to(policy.device)).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
     train_batch['moment_loss_1'] = torch.unsqueeze(loss_p1.detach(), 0)
