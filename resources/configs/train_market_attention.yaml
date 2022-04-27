@@ -3,10 +3,10 @@ risk-ppo:
     run: PPO
     name: MRK PPO ATT
 
-    samples: 4
+    samples: 5
 
     stop:
-        training_iteration: 9500
+        training_iteration: 10000
 
     config:
         env_config:
@@ -35,7 +35,7 @@ risk-ppo:
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 0.21
+        num_gpus: 0.2
         num_workers: 0
         framework: torch
         log_level: ERROR

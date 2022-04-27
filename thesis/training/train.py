@@ -43,7 +43,7 @@ def training(trainer, config, stop, samples, checkpoint_path, name, restore, off
 
     analysis = tune.run(trainer, config=config, stop=stop, checkpoint_at_end=True,
                         local_dir=checkpoint_path, name=name, verbose=Verbosity.V1_EXPERIMENT,
-                        callbacks=callbacks, checkpoint_freq=50, num_samples=samples, restore=restore)
+                        callbacks=callbacks, checkpoint_freq=250, num_samples=samples, restore=restore)
 
     # return the analysis object
     return analysis
