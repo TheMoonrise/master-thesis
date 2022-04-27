@@ -77,6 +77,11 @@ class Setup:
         prefs['config']['env'] = prefs['env']
         prefs['config']['callbacks'] = CustomCallbacks
 
+        # check if cuda is available
+        if not torch.cuda.is_available():
+            print('Disabled gpu usage because CUDA is not available')
+            prefs['config']['num_gpus'] = 0
+
         # add the project root path to the config
         if 'env_config' in prefs['config'] and 'root' in prefs['config']['env_config']:
             prefs['config']['env_config']['root'] = prefs['config']['env_config']['root'] or os.getcwd()
