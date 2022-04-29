@@ -13,7 +13,7 @@ risk-ppo:
             use_attention: true
             custom_action_dist: Dirichlet
             custom_model_config:
-                risk_factor: 1
+                risk_factor: 0.1
                 risk_lr: 0.00005
 
         env_config:
@@ -41,8 +41,13 @@ risk-ppo:
         use_critic: true
         batch_mode: complete_episodes
         num_gpus: 0.19
-        num_workers: 0
+        # num_workers: 0
         framework: torch
         log_level: ERROR
+
+        num_workers: 1
+        num_cpus_per_worker: 1
+        num_envs_per_worker: 1
+        evaluation_num_workers: 1
 
         normalize_actions: false
