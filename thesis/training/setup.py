@@ -2,7 +2,10 @@
 Setup class for configuring custom training parameters.
 """
 
+import json
+import numbers
 import os
+from numpy import number
 import yaml
 import torch
 
@@ -65,29 +68,51 @@ class Setup:
         with open(path) as file:
             # TODO: Use RlLib tuned yaml
             # run key rename -> run_or_experiment
-            prefs = yaml.safe_load(file)
+            params = yaml.safe_load(file)
 
         # remove the first layer of the preferences
-        prefs = prefs[list(prefs.keys())[0]]
+        params = params[list(params.keys())[0]]
 
         # add the default samples value
-        if 'samples' not in prefs: prefs['samples'] = 1
+        if 'samples' not in params: params['samples'] = 1
 
         # modify configuration keys
-        prefs['config']['env'] = prefs['env']
-        prefs['config']['callbacks'] = CustomCallbacks
+        params['config']['env'] = params['env']
+        params['config']['callbacks'] = CustomCallbacks
 
         # check if cuda is available
         if not torch.cuda.is_available():
             print('Disabled gpu usage because CUDA is not available')
-            prefs['config']['num_gpus'] = 0
+            params['config']['num_gpus'] = 0
 
         # add the project root path to the config
-        if 'env_config' in prefs['config'] and 'root' in prefs['config']['env_config']:
+        if 'env_config' in params['config'] and 'root' in params['config']['env_config']:
             root = os.path.join(os.path.dirname(__file__), '..', '..')
-            prefs['config']['env_config']['root'] = prefs['config']['env_config']['root'] or root
+            params['config']['env_config']['root'] = params['config']['env_config']['root'] or root
 
-        return prefs
+        return params
+
+    def update_hyperparameters(self, params, path):
+        """
+        Updates the parameters within the given parameters dict with the values found in another configuration.
+        No string values are overwritten, only numeric values.
+        This way paths, resources and settings are taken from the original preferences.
+        :param params: The parameters to update
+        :param path: The path to the config file to read values from.
+        """
+        if not os.path.exists(path): return
+        with open(path) as file: config = json.load(file)
+
+        def update_dict(dict_from, dict_to):
+            for k, v in dict_from.items():
+                print('checking', k, type(v))
+                if isinstance(v, dict):
+                    if k not in dict_to: dict_to[k] = {}
+                    update_dict(v, dict_to[k])
+
+                if isinstance(v, numbers.Number): dict_to[k] = v
+
+        update_dict(config, params['config'])
 
     def hyperparameter_tuning(self, prefs):
         """

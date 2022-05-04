@@ -3,6 +3,8 @@ Validation of an agent.
 """
 
 import argparse
+import json
+import os
 import time
 import torch
 
@@ -61,13 +63,13 @@ def validate(trainer, config, checkpoint, episodes):
             if sleep > 0: time.sleep(sleep)
 
             if done:
-                state = env.reset()
+                episodes -= 1
+                if episodes != 0: state = env.reset()
                 state_rnn = [np.zeros((1, attention_dim))]
 
                 # update and print the current average performance
                 tracker = (tracker[0] + 1, tracker[1] + episode_reward, tracker[2] + episode_reward ** 2)
                 episode_reward = 0
-                episodes -= 1
 
                 avg_reward = tracker[1] / tracker[0]
                 variance = tracker[2] / tracker[0] - avg_reward ** 2
@@ -103,10 +105,14 @@ if __name__ == '__main__':
 
     params = setup.parameters(args.params)
 
+    config_path = os.path.join(os.path.dirname(args.checkpoint), '..', 'params.json')
+    setup.update_hyperparameters(params, config_path)
+
     # fetch the trainer for the requested model
     trainer = setup.trainer(params['run'])
 
     # validate the results
+    # validate(trainer, params['config'], args.checkpoint, args.episodes)
     validate(trainer, params['config'], args.checkpoint, args.episodes)
 
     setup.shutdown()

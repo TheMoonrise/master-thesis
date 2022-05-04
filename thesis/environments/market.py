@@ -154,7 +154,7 @@ class MarketEnv(gym.Env):
         if not self.is_training:
             self.episode_start = self.episode_count * self.validation_step
 
-            if self.episode_start + self.episode_length >= self.data.shape[0]:
+            if self.episode_start + self.episode_length > self.data.shape[0]:
                 print('Validation is exceeding the validation dataset size')
 
         self.episode_count += 1

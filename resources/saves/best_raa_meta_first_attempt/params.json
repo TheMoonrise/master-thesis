@@ -1,0 +1,40 @@
+{
+  "batch_mode": "complete_episodes",
+  "callbacks": "<class 'thesis.training.callbacks.CustomCallbacks'>",
+  "clip_param": 0.2,
+  "entropy_coeff": 0.015,
+  "env": "Market",
+  "env_config": {
+    "data_path": ".\\resources\\marketdata\\data.csv",
+    "episode_length": 288,
+    "is_validation": false,
+    "meta_actions": true,
+    "root": "/home/stud/tamunjoh/project/thesis/training/../..",
+    "timeout": 0,
+    "transaction_fee": 0.002,
+    "validation_length": 8928,
+    "validation_output": ".\\checkpoints\\validation_market_ppo_attention_raactions_meta.csv",
+    "validation_step": 288
+  },
+  "framework": "torch",
+  "gamma": 0.99,
+  "kl_coeff": 0.2,
+  "lambda": 0.8,
+  "log_level": "ERROR",
+  "lr": 0.0004,
+  "model": {
+    "custom_action_dist": "Dirichlet",
+    "custom_model_config": {
+      "risk_factor": 1,
+      "risk_lr": 5e-05
+    },
+    "use_attention": true
+  },
+  "normalize_actions": false,
+  "num_gpus": 0.19,
+  "num_workers": 0,
+  "use_critic": true,
+  "use_gae": true,
+  "vf_clip_param": 9,
+  "vf_loss_coeff": 1.0
+}
