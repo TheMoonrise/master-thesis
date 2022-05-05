@@ -1,0 +1,30 @@
+risk-ppo:
+    env: Gridworld
+    run: PPO-RISK
+    name: GRD PPO RAA META
+
+    samples: 1
+
+    stop:
+        training_iteration: 40
+
+    config:
+        model:
+            custom_action_dist: Dirichlet
+            custom_model_config:
+                risk_factor: 8
+                risk_lr: 0.00005
+
+        env_config:
+            grid_path: .\resources\grids\grid_alternating.json
+            root: null
+            timeout: 0.1
+            meta_actions: true
+
+        normalize_actions: false
+        use_gae: true
+        use_critic: true
+        num_workers: 0
+        num_gpus: 0.9
+        framework: torch
+        log_level: ERROR

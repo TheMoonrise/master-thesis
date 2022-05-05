@@ -3,7 +3,6 @@ Validation of an agent.
 """
 
 import argparse
-import json
 import os
 import time
 import torch

@@ -105,7 +105,6 @@ class Setup:
 
         def update_dict(dict_from, dict_to):
             for k, v in dict_from.items():
-                print('checking', k, type(v))
                 if isinstance(v, dict):
                     if k not in dict_to: dict_to[k] = {}
                     update_dict(v, dict_to[k])

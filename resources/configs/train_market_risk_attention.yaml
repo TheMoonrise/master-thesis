@@ -3,10 +3,10 @@ risk-ppo:
     run: PPO-RISK
     name: MRK PPO ATT RAA
 
-    samples: 5
+    samples: 2
 
     stop:
-        training_iteration: 10000
+        training_iteration: 3
 
     config:
         model:

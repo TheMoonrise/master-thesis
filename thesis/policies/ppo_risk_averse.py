@@ -6,9 +6,8 @@ import torch
 import numpy as np
 
 from ray.rllib.agents.ppo import PPOTrainer
-from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy, ppo_surrogate_loss, kl_and_loss_stats, setup_mixins
+from ray.rllib.agents.ppo.ppo_torch_policy import PPOTorchPolicy, ppo_surrogate_loss, kl_and_loss_stats
 from ray.rllib.policy.sample_batch import SampleBatch
-from ray.rllib.policy.view_requirement import ViewRequirement
 # from ray.rllib.models.torch.torch_action_dist import TorchDirichlets
 from ray.rllib.evaluation.postprocessing import compute_gae_for_sample_batch
 # from ray.rllib.utils.torch_utils import explained_variance, sequence_mask
@@ -24,8 +23,7 @@ def risk_averse_policy():
         loss_fn=loss_fn,
         optimizer_fn=optimizer_fn,
         postprocess_fn=postprocessing_fn,
-        stats_fn=stats_fn,
-        before_loss_init=after_init
+        stats_fn=stats_fn
     )
 
     return policy
@@ -61,19 +59,6 @@ def stats_fn(policy, train_batch):
     return stats
 
 
-def after_init(policy, obs_space, action_space, config):
-    """
-    Called after the policy is initialized.
-    Additional view requirements are added in this step.
-    :param policy: The active policy.
-    :param obs_space: The observation space of the policy.
-    :param action_space: The action space of the policy.
-    :config: The trainer configuration dict.
-    """
-    policy.view_requirements['clean_rewards'] = ViewRequirement(data_col='rewards', shift=0)
-    setup_mixins(policy, obs_space, action_space, config)
-
-
 def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=None):
     """
     Performs advantage computation. This adds risk values to each state reward.
@@ -84,13 +69,10 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
     :return: The updated batches dict.
     """
     with torch.no_grad():
-        actions = sample_batch[SampleBatch.ACTIONS]
-        if len(actions.shape) < 2: actions = np.reshape(actions, (-1, 1))
+        risk_input = risk_net_input(sample_batch, policy.device)
 
-        sample_batch['risk_input'] = torch.from_numpy(np.concatenate((sample_batch[SampleBatch.OBS], actions), axis=1)).float()
-
-        outs_p2 = policy.model.risk_net_p2(sample_batch['risk_input'].to(policy.device)).squeeze().cpu()
-        outs_p1 = policy.model.risk_net_p1(sample_batch['risk_input'].to(policy.device)).squeeze().cpu()
+        outs_p2 = policy.model.risk_net_p2(risk_input.to(policy.device)).squeeze().cpu()
+        outs_p1 = policy.model.risk_net_p1(risk_input.to(policy.device)).squeeze().cpu()
 
         # risk = torch.maximum(torch.mean(outs_p2 - torch.pow(outs_p1, 2.0)), torch.tensor(0))
         risk = torch.maximum(outs_p2 - torch.pow(outs_p1, 2.0), torch.tensor(0))
@@ -98,6 +80,7 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
 
         # check if risk is single value; if yes unsqueeze to match shape of rewards
         sample_batch['risk'] = risk.numpy() if risk.shape else torch.unsqueeze(risk, 0).numpy()
+        sample_batch['clean_rewards'] = sample_batch[SampleBatch.REWARDS].copy()
         sample_batch[SampleBatch.REWARDS] -= sample_batch['risk'] * risk_factor
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
@@ -141,13 +124,15 @@ def loss_fn(policy, model, dist_class, train_batch):
     :return: The total loss value for optimization.
     """
     # compute the loss for each of the risk estimation networks
+    risk_input = risk_net_input(train_batch, policy.device)
+
     trgt_p1 = train_batch['clean_rewards']
     trgt_p2 = torch.pow(trgt_p1, 2.0)
 
-    outs_p1 = policy.model.risk_net_p1(train_batch['risk_input'].to(policy.device)).squeeze()
+    outs_p1 = policy.model.risk_net_p1(risk_input).squeeze()
     loss_p1 = torch.mean(torch.pow(outs_p1 - trgt_p1, 2.0))
 
-    outs_p2 = policy.model.risk_net_p2(train_batch['risk_input'].to(policy.device)).squeeze()
+    outs_p2 = policy.model.risk_net_p2(risk_input).squeeze()
     loss_p2 = torch.mean(torch.pow(outs_p2 - trgt_p2, 2.0))
 
     train_batch['moment_loss_1'] = torch.unsqueeze(loss_p1.detach(), 0)
@@ -160,6 +145,24 @@ def loss_fn(policy, model, dist_class, train_batch):
     return loss_surrogate, loss_p1, loss_p2
 
 
+def risk_net_input(sample_batch, device):
+    """
+    Computes the input for the risk nets for a given sample.
+    :param sample_batch: The sample batch to construct the input from.
+    :param device: The device to move the final tensor to.
+    :return: The risk net input as torch tensor.
+    """
+    actions = sample_batch[SampleBatch.ACTIONS]
+    if isinstance(actions, np.ndarray): actions = torch.from_numpy(actions)
+    if len(actions.shape) < 2: actions = torch.reshape(actions, (-1, 1))
+
+    observations = sample_batch[SampleBatch.OBS]
+    if isinstance(observations, np.ndarray): observations = torch.from_numpy(observations)
+
+    risk_input = torch.cat((observations, actions), 1).float()
+    return risk_input.to(device)
+
+
 def risk_net(input_size, config):
     """
     Generates a torch model for risk estimation.
@@ -168,9 +171,12 @@ def risk_net(input_size, config):
     :returns: A pytorch model with the shape of input_size : 1
     """
     return torch.nn.Sequential(
+        # torch.nn.Linear(input_size, 64),
+        # torch.nn.ReLU(),
+        # torch.nn.Linear(64, 16),
+        # torch.nn.ReLU(),
+        # torch.nn.Linear(16, 1)
         torch.nn.Linear(input_size, 64),
         torch.nn.ReLU(),
-        torch.nn.Linear(64, 16),
-        torch.nn.ReLU(),
-        torch.nn.Linear(16, 1)
+        torch.nn.Linear(64, 1),
     )

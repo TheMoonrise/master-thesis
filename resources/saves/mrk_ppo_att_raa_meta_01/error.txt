@@ -1,0 +1,75 @@
+Failure # 1 (occurred at 2022-04-29_21-58-25)
+Traceback (most recent call last):
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/tune/trial_runner.py", line 890, in _process_trial
+    results = self.trial_executor.fetch_result(trial)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/tune/ray_trial_executor.py", line 788, in fetch_result
+    result = ray.get(trial_future[0], timeout=DEFAULT_GET_TIMEOUT)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/_private/client_mode_hook.py", line 105, in wrapper
+    return func(*args, **kwargs)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/worker.py", line 1625, in get
+    raise value.as_instanceof_cause()
+ray.exceptions.RayTaskError(ValueError): [36mray::PPO.train()[39m (pid=2725586, ip=10.153.51.177, repr=PPO)
+  File "/home/stud/tamunjoh/project/thesis/policies/ppo_risk_averse.py", line 157, in loss_fn
+    loss_surrogate = ppo_surrogate_loss(policy, model, dist_class, train_batch)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/agents/ppo/ppo_torch_policy.py", line 46, in ppo_surrogate_loss
+    curr_action_dist = dist_class(logits, model)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/models/torch/torch_action_dist.py", line 521, in __init__
+    self.dist = torch.distributions.dirichlet.Dirichlet(
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/torch/distributions/dirichlet.py", line 52, in __init__
+    super(Dirichlet, self).__init__(batch_shape, event_shape, validate_args=validate_args)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/torch/distributions/distribution.py", line 55, in __init__
+    raise ValueError(
+ValueError: Expected parameter concentration (Tensor of shape (140, 11)) of distribution Dirichlet(concentration: torch.Size([140, 11])) to satisfy the constraint IndependentConstraint(GreaterThan(lower_bound=0.0), 1), but found invalid values:
+tensor([[nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan],
+        ...,
+        [nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan]], device='cuda:0',
+       grad_fn=<AddBackward0>)
+
+The above exception was the direct cause of the following exception:
+
+[36mray::PPO.train()[39m (pid=2725586, ip=10.153.51.177, repr=PPO)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/agents/trainer.py", line 682, in train
+    raise e
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/agents/trainer.py", line 668, in train
+    result = Trainable.train(self)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/tune/trainable.py", line 283, in train
+    result = self.step()
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/agents/trainer_template.py", line 206, in step
+    step_results = next(self.train_exec_impl)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 756, in __next__
+    return next(self.built_iterator)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 783, in apply_foreach
+    for item in it:
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 783, in apply_foreach
+    for item in it:
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 843, in apply_filter
+    for item in it:
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 843, in apply_filter
+    for item in it:
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 783, in apply_foreach
+    for item in it:
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 783, in apply_foreach
+    for item in it:
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/util/iter.py", line 791, in apply_foreach
+    result = fn(item)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/execution/train_ops.py", line 197, in __call__
+    results = policy.learn_on_loaded_batch(
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/policy/torch_policy.py", line 627, in learn_on_loaded_batch
+    tower_outputs = self._multi_gpu_parallel_grad_calc(device_batches)
+  File "/home/stud/tamunjoh/project/.venv/lib/python3.8/site-packages/ray/rllib/policy/torch_policy.py", line 1052, in _multi_gpu_parallel_grad_calc
+    raise last_result[0] from last_result[1]
+ValueError: Expected parameter concentration (Tensor of shape (140, 11)) of distribution Dirichlet(concentration: torch.Size([140, 11])) to satisfy the constraint IndependentConstraint(GreaterThan(lower_bound=0.0), 1), but found invalid values:
+tensor([[nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan],
+        ...,
+        [nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan],
+        [nan, nan, nan,  ..., nan, nan, nan]], device='cuda:0',
+       grad_fn=<AddBackward0>)
+In tower 0 on device cuda:0
+

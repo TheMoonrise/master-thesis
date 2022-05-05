@@ -5,6 +5,15 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "GRD DEF RAA",
+			"type": "python",
+			"request": "launch",
+			"program": ".\\thesis\\training\\train.py",
+			"console": "externalTerminal",
+			"args": [".\\resources\\configs\\train_grid_risk_default.yaml", "--debug", "--name", "debugging"],
+			"justMyCode": false
+		},
+		{
 			"name": "MRK DEF RAA META",
 			"type": "python",
 			"request": "launch",

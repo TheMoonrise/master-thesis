@@ -3,7 +3,7 @@ risk-ppo:
     run: PPO-RISK
     name: MRK PPO ATT RAA META
 
-    samples: 5
+    samples: 1
 
     stop:
         training_iteration: 10000
@@ -13,8 +13,10 @@ risk-ppo:
             use_attention: true
             custom_action_dist: Dirichlet
             custom_model_config:
-                risk_factor: 0.1
-                risk_lr: 0.00005
+                # risk_factor: 0.1
+                risk_factor: tune.grid_search([0.1, 0.2, 0.5, 0.8, 1.3])
+                # risk_lr: 0.00005
+                risk_lr: tune.uniform(1e-5, 1e-4)
 
         env_config:
             data_path: .\resources\marketdata\data.csv
@@ -41,13 +43,8 @@ risk-ppo:
         use_critic: true
         batch_mode: complete_episodes
         num_gpus: 0.19
-        # num_workers: 0
+        num_workers: 5
         framework: torch
         log_level: ERROR
-
-        num_workers: 1
-        num_cpus_per_worker: 1
-        num_envs_per_worker: 1
-        evaluation_num_workers: 1
 
         normalize_actions: false

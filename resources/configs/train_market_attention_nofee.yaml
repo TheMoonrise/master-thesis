@@ -1,0 +1,41 @@
+risk-ppo:
+    env: Market
+    run: PPO
+    name: MRK PPO ATT NOFEE
+
+    samples: 2
+
+    stop:
+        training_iteration: 10000
+
+    config:
+        env_config:
+            data_path: .\resources\marketdata\data.csv
+            root: null
+            timeout: 0
+            transaction_fee: 0
+            episode_length: 288
+            validation_length: 8928
+            validation_step: 288
+            is_validation: false
+            validation_output: .\checkpoints\validation_market_ppo_attention.csv
+
+        model:
+            use_attention: true
+
+        gamma: 0.99
+        lr: 0.0004
+        lambda: 0.8
+        kl_coeff: 0.2
+        vf_loss_coeff: 1.0
+        entropy_coeff: 0.015
+        clip_param: 0.2
+        vf_clip_param: 9
+
+        use_gae: true
+        use_critic: true
+        batch_mode: complete_episodes
+        num_gpus: 0.49
+        num_workers: 5
+        framework: torch
+        log_level: ERROR

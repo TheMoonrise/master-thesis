@@ -71,7 +71,7 @@ def after_init(policy, obs_space, action_space, config):
     stack_size = config['model']['custom_model_config']['risk_stack_size']
 
     policy.view_requirements['clean_rewards'] = ViewRequirement(data_col='rewards', shift=0)
-    policy.model.view_requirements['stacked_rewards'] = ViewRequirement(data_col='rewards', shift=f'-{stack_size}:-1')
+    policy.model.view_requirements['stacked_rewards'] = ViewRequirement(data_col='clean_rewards', shift=f'-{stack_size}:-1')
     policy.view_requirements.update(policy.model.view_requirements)
 
     setup_mixins(policy, obs_space, action_space, config)
@@ -101,6 +101,7 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
         sample_batch['risk'] = np.ones_like(sample_batch[SampleBatch.REWARDS]) * risk.item()
 
         # rewards = sample_batch[SampleBatch.REWARDS].copy() - sample_batch['risk'] * risk_factor
+        sample_batch['clean_rewards'] = sample_batch[SampleBatch.REWARDS].copy()
         sample_batch[SampleBatch.REWARDS] -= sample_batch['risk'] * risk_factor
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
