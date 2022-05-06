@@ -1,0 +1,35 @@
+risk-ppo:
+    env: DecentralizedMarket
+    run: PPO
+    name: DEMRK PPO ATT NOFEE
+
+    samples: 1
+
+    stop:
+        training_iteration: 5000
+        # training_iteration: 3
+
+    config:
+        env_config:
+            starting_funds: 100.0
+            fee_model: no_fee
+
+        model:
+            use_attention: true
+
+        gamma: 0.99
+        lr: 0.0004
+        lambda: 0.8
+        kl_coeff: 0.2
+        vf_loss_coeff: 1.0
+        entropy_coeff: 0.015
+        clip_param: 0.2
+        vf_clip_param: 9
+
+        use_gae: true
+        use_critic: true
+        batch_mode: complete_episodes
+        num_gpus: 0.99
+        num_workers: 5
+        framework: torch
+        log_level: ERROR

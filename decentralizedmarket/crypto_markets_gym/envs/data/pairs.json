@@ -1,0 +1,71 @@
+[{"pair": "WETH_WETH",
+  "fee" : "0bps",
+      "baseCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+  {"pair": "USDC_WETH",
+  "fee" : "5bps",
+      "baseCurrency": {"is": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "WBTC_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "UNI_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "MATIC_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "MKR_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "LINK_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x514910771af9ca656af840dff83e8264ecf986ca"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "SHIB_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "LDO_WETH",
+  "fee" : "100bps",
+      "baseCurrency": {"is": "0x5a98fcbea516cf06857215779fd812ca3bef1b32"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "DXDY_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x92d6c1e31e14520e676a687f0a93788b716beff5"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "OGN_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x8207c1ffc5b6804f6024322ccf34f29c3541ae26"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "FTM_WETH",
+  "fee" : "100bps",
+      "baseCurrency": {"is": "0x4e15361fd6b4bb609fa63c81a2be19d873717870"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "FTX_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0x50d1c9771902476076ecfc8b2a83ad6b9355a4c9"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+},
+{"pair": "RPL_WETH",
+  "fee" : "30bps",
+      "baseCurrency": {"is": "0xb4efd85c19999d84251304bda99e90b92300bd93"},
+      "quoteCurrency": {"is": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"}
+}
+]

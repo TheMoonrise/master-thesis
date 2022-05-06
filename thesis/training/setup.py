@@ -24,6 +24,8 @@ from thesis.environments.market import MarketEnv
 from thesis.policies.ppo_risk_averse import risk_averse_trainer
 from thesis.policies.ppo_risk_strategy import risk_averse_strategy_trainer
 
+from crypto_markets_gym.envs.crypto_markets_env import CryptoMarketsEnv
+
 
 class Setup:
     """
@@ -42,6 +44,7 @@ class Setup:
         # register custom environments
         register_env('Gridworld', GridEnv)
         register_env('Market', MarketEnv)
+        register_env('DecentralizedMarket', CryptoMarketsEnv)
 
         # overwrite of the default TorchDirichlet action distribution.
         # default implementation throws and error:
