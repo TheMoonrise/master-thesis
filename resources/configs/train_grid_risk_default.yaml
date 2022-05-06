@@ -13,6 +13,7 @@ risk-ppo:
             custom_model_config:
                 risk_factor: 1
                 risk_lr: 0.00005
+                risk_net_layers: [32]
 
         env_config:
             grid_path: .\resources\grids\grid_mean_test.json

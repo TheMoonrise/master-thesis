@@ -170,13 +170,13 @@ def risk_net(input_size, config):
     :param config: The training configuration.
     :returns: A pytorch model with the shape of input_size : 1
     """
-    return torch.nn.Sequential(
-        # torch.nn.Linear(input_size, 64),
-        # torch.nn.ReLU(),
-        # torch.nn.Linear(64, 16),
-        # torch.nn.ReLU(),
-        # torch.nn.Linear(16, 1)
-        torch.nn.Linear(input_size, 64),
-        torch.nn.ReLU(),
-        torch.nn.Linear(64, 1),
-    )
+    sizes = config['model']['custom_model_config']['risk_net_layers']
+    sizes = [input_size] + sizes
+
+    layers = []
+    for i in range(1, len(sizes)):
+        layers.append(torch.nn.Linear(sizes[i - 1], sizes[i]))
+        layers.append(torch.nn.ReLU())
+
+    layers.append(torch.nn.Linear(sizes[-1], 1))
+    return torch.nn.Sequential(*layers)

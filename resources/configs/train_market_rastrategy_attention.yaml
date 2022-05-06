@@ -13,6 +13,7 @@ risk-ppo:
                 risk_factor: 1
                 risk_lr: 0.00001
                 risk_stack_size: 80
+                risk_net_layers: [32, 16]
 
         env_config:
             data_path: .\resources\marketdata\data.csv

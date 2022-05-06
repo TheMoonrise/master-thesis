@@ -11,6 +11,8 @@ from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.policy.view_requirement import ViewRequirement
 from ray.rllib.evaluation.postprocessing import compute_gae_for_sample_batch
 
+from thesis.policies.ppo_risk_averse import risk_net
+
 
 def risk_averse_strategy_policy():
     """
@@ -159,17 +161,3 @@ def loss_fn(policy, model, dist_class, train_batch):
     # print('LOSS SUR', f'{loss_surrogate: 10.3f}', 'LP1', f'{loss_p1.item(): 10.3f}', 'LP2', f'{loss_p2.item(): 10.3f}')
 
     return loss_surrogate, loss_p1, loss_p2
-
-
-def risk_net(input_size, config):
-    """
-    Generates a torch model for risk estimation.
-    :param input_size: The size of the input layer.
-    :param config: The training configuration.
-    :returns: A pytorch model with the shape of input_size : 1
-    """
-    return torch.nn.Sequential(
-        torch.nn.Linear(input_size, 16),
-        torch.nn.ReLU(),
-        torch.nn.Linear(16, 1)
-    )

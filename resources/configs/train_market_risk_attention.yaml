@@ -6,7 +6,8 @@ risk-ppo:
     samples: 2
 
     stop:
-        training_iteration: 3
+        training_iteration: 5000
+        # training_iteration: 3
 
     config:
         model:
@@ -14,6 +15,7 @@ risk-ppo:
             custom_model_config:
                 risk_factor: 0.1
                 risk_lr: 0.00005
+                risk_net_layers: [32, 16]
 
         env_config:
             data_path: .\resources\marketdata\data.csv
@@ -39,7 +41,7 @@ risk-ppo:
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 0.19
+        num_gpus: 0.49
         num_workers: 5
         framework: torch
         log_level: ERROR

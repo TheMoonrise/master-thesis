@@ -5,14 +5,15 @@ Setup class for configuring custom training parameters.
 import json
 import numbers
 import os
-from numpy import number
 import yaml
 import torch
 
 import ray
-from ray import tune
 from ray.tune.registry import register_env
 from ray.rllib.agents.ppo import PPOTrainer
+
+# tune import required for resolving hyperparameter search in config files
+import ray.tune as tune  # noqa type: ignore
 
 from ray.rllib.models.torch.torch_action_dist import TorchDirichlet
 from ray.rllib.models import ModelCatalog
@@ -109,7 +110,8 @@ class Setup:
                     if k not in dict_to: dict_to[k] = {}
                     update_dict(v, dict_to[k])
 
-                if isinstance(v, numbers.Number): dict_to[k] = v
+                if isinstance(v, numbers.Number) or isinstance(v, list):
+                    dict_to[k] = v
 
         update_dict(config, params['config'])
 
