@@ -29,3 +29,6 @@ class CustomCallbacks(DefaultCallbacks):
         """
         if 'risk' in postprocessed_batch:
             episode.custom_metrics['risk'] = np.average(postprocessed_batch['risk'])
+
+        if 'clean_rewards' in postprocessed_batch:
+            episode.custom_metrics['clean_episode_reward'] = np.average(postprocessed_batch['clean_rewards'])
