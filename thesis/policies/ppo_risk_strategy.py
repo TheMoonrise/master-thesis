@@ -72,8 +72,8 @@ def after_init(policy, obs_space, action_space, config):
     """
     stack_size = config['model']['custom_model_config']['risk_stack_size']
 
-    policy.view_requirements['clean_rewards'] = ViewRequirement(data_col='rewards', shift=0)
-    policy.model.view_requirements['stacked_rewards'] = ViewRequirement(data_col='clean_rewards', shift=f'-{stack_size}:-1')
+    # policy.model.view_requirements['clean_rewards'] = ViewRequirement(data_col='rewards', shift=0)
+    policy.model.view_requirements['stacked_rewards'] = ViewRequirement(data_col='rewards', shift=f'-{stack_size}:-1')
     policy.view_requirements.update(policy.model.view_requirements)
 
     setup_mixins(policy, obs_space, action_space, config)
@@ -97,14 +97,14 @@ def postprocessing_fn(policy, sample_batch, other_agent_batches=None, episode=No
         outs_p1 = policy.model.risk_net_p1(zero_input).squeeze().to('cpu')
 
         risk = torch.maximum(outs_p2 - torch.pow(outs_p1, 2.0), torch.tensor(0))
-        risk_factor = policy.config['model']['custom_model_config']['risk_factor']
+        # risk_factor = policy.config['model']['custom_model_config']['risk_factor']
 
         # check if risk is single value; if yes unsqueeze to match shape of rewards
         sample_batch['risk'] = np.ones_like(sample_batch[SampleBatch.REWARDS]) * risk.item()
 
         # rewards = sample_batch[SampleBatch.REWARDS].copy() - sample_batch['risk'] * risk_factor
         sample_batch['clean_rewards'] = sample_batch[SampleBatch.REWARDS].copy()
-        sample_batch[SampleBatch.REWARDS] -= sample_batch['risk'] * risk_factor
+        # sample_batch[SampleBatch.REWARDS] -= sample_batch['risk'] * risk_factor
 
         return compute_gae_for_sample_batch(policy, sample_batch, other_agent_batches, episode)
 
@@ -157,7 +157,11 @@ def loss_fn(policy, model, dist_class, train_batch):
     train_batch['moment_loss_2'] = torch.unsqueeze(loss_p2.detach(), 0)
 
     # compute the default loss value
+    risk_factor = policy.config['model']['custom_model_config']['risk_factor']
+    train_batch[SampleBatch.REWARDS] -= train_batch['risk'] * risk_factor
+
     loss_surrogate = ppo_surrogate_loss(policy, model, dist_class, train_batch)
+    train_batch[SampleBatch.REWARDS] = train_batch['clean_rewards']
     # print('LOSS SUR', f'{loss_surrogate: 10.3f}', 'LP1', f'{loss_p1.item(): 10.3f}', 'LP2', f'{loss_p2.item(): 10.3f}')
 
     return loss_surrogate, loss_p1, loss_p2
