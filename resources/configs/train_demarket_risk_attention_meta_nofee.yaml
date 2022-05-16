@@ -3,7 +3,7 @@ risk-ppo:
     run: PPO-RISK
     name: DEMRK PPO ATT RAA META NOFEE
 
-    samples: 2
+    samples: 1
 
     stop:
         training_iteration: 25000
@@ -35,7 +35,7 @@ risk-ppo:
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 0.49
+        num_gpus: 0.99
         num_workers: 3
         framework: torch
         log_level: ERROR
