@@ -3,10 +3,10 @@ risk-ppo:
     run: PPO-RISK
     name: DEMRK PPO ATT RAA META NOFEE
 
-    samples: 1
+    samples: 2
 
     stop:
-        training_iteration: 20000
+        training_iteration: 8000
         # training_iteration: 3
 
     config:
@@ -14,7 +14,7 @@ risk-ppo:
             use_attention: true
             custom_action_dist: Dirichlet
             custom_model_config:
-                risk_factor: 0.05
+                risk_factor: 0.01
                 risk_lr: 0.00003
                 risk_net_layers: [32, 16]
 
@@ -35,7 +35,7 @@ risk-ppo:
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 0.99
+        num_gpus: 0.49
         num_workers: 3
         framework: torch
         log_level: ERROR
