@@ -1,7 +1,7 @@
 risk-ppo:
     env: DecentralizedMarket
     run: PPO-RISK
-    name: DEMRK PPO ATT RAA META NOFEE
+    name: DEMRK PPO ATT NORAA META NOFEE
 
     samples: 1
 
@@ -14,8 +14,8 @@ risk-ppo:
             use_attention: true
             custom_action_dist: Dirichlet
             custom_model_config:
-                risk_factor: 0.1
-                risk_lr: 0.0001
+                risk_factor: 0
+                risk_lr: 0.00003
                 risk_net_layers: [32, 16]
 
         env_config:
