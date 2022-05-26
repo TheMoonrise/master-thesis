@@ -42,10 +42,13 @@ class CryptoMarketsEnv(gym.Env):
         fee_model = FeeModel.FULL_FEE
 
         self.meta_actions = False
+        self.softmax_actions = False
 
         if 'amount_time_steps_to_include' in config: amount_time_steps_to_include = config['amount_time_steps_to_include']
         if 'starting_funds' in config: starting_funds = config['starting_funds']
         if 'fee_model' in config: fee_model = config['fee_model']
+
+        if 'softmax_actions' in config: self.softmax_actions = config['softmax_actions']
         if 'meta_actions' in config: self.meta_actions = config['meta_actions']
 
         print(f"STARTING FUNDS {starting_funds}")
@@ -343,6 +346,7 @@ class CryptoMarketsEnv(gym.Env):
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, dict]:
 
         # NOTE if meta actions are enabled the action is sampled here
+        if self.softmax_actions: action = np.exp(action) / np.sum(np.exp(action), axis=0)
         if self.meta_actions: action = np.array(np.random.choice(self.amount_pairs_to_include, p=action))
 
         # Beginning of time step / here we do potential trading

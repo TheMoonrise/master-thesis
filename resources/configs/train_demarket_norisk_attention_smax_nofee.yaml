@@ -1,7 +1,7 @@
 risk-ppo:
     env: DecentralizedMarket
     run: PPO-RISK
-    name: DEMRK PPO ATT NORAA META NOFEE
+    name: DEMRK PPO ATT NORAA SMAX NOFEE
 
     samples: 1
 
@@ -12,7 +12,7 @@ risk-ppo:
     config:
         model:
             use_attention: true
-            custom_action_dist: Dirichlet
+            # custom_action_dist: Dirichlet
             custom_model_config:
                 risk_factor: 0
                 risk_lr: 0.00003
@@ -22,16 +22,17 @@ risk-ppo:
             starting_funds: 100.0
             fee_model: no_fee
             meta_actions: true
+            softmax_actions: true
 
-        # gamma: 0.99
-        gamma: tune.uniform(0.9, 0.999)
-        # lr: 0.0004
-        lr: tune.grid_search([0.0001, 0.0004, 0.0009])
+        gamma: 0.95
+        # gamma: tune.uniform(0.9, 0.999)
+        lr: 0.0004
+        # lr: tune.grid_search([0.0001, 0.0004, 0.0009])
         lambda: 0.8
         kl_coeff: 0.2
         vf_loss_coeff: 1.0
-        entropy_coeff: 0.015
-        entropy_coeff: tune.uniform(0.005, 0.085)
+        entropy_coeff: 0.05
+        # entropy_coeff: tune.uniform(0.005, 0.085)
         clip_param: 0.2
         vf_clip_param: 9
 

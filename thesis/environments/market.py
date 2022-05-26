@@ -46,6 +46,7 @@ class MarketEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=0, high=100_000, shape=(self.coin_count + 1,))
 
         # when meta actions are enabled the action sampling is done in the environment
+        self.softmax_actions = 'softmax_actions' in config and config['softmax_actions']
         self.meta_actions = 'meta_actions' in config and config['meta_actions']
 
         if self.meta_actions: self.action_space = gym.spaces.Box(low=0, high=1, shape=(self.coin_count,))
@@ -98,6 +99,14 @@ class MarketEnv(gym.Env):
         if validation_length > 0:
             self.data = self.data[:-validation_length] if self.is_training else self.data[-validation_length:]
 
+    def softmax(self, x):
+        """
+        Applies softmax to the given input.
+        :param x: The sample to compute softmax for.
+        :return: The softmax value.
+        """
+        return np.exp(x) / np.sum(np.exp(x), axis=0)
+
     def step(self, action):
         """
         Advances the environment by one step.
@@ -125,6 +134,10 @@ class MarketEnv(gym.Env):
 
         last_state = self.data[state_index - 1]
         curr_state = self.data[state_index]
+
+        # apply softmax to the action vector
+        if self.softmax_actions:
+            action = self.softmax(action)
 
         # sample an action if using meta actions
         if self.meta_actions: action = np.random.choice(self.coin_count, p=action)

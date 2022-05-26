@@ -6,7 +6,7 @@ risk-ppo:
     samples: 1
 
     stop:
-        training_iteration: 40
+        training_iteration: 100
 
     config:
         model:
@@ -21,11 +21,13 @@ risk-ppo:
             root: null
             timeout: 0.1
             meta_actions: true
+            softmax_actions: false
 
-        normalize_actions: false
         use_gae: true
         use_critic: true
         num_workers: 0
-        num_gpus: 0.9
+        num_gpus: 0
         framework: torch
         log_level: ERROR
+
+        normalize_actions: false

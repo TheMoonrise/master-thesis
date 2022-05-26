@@ -63,10 +63,19 @@ class GridEnv(gym.Env):
         self.observation_space = gym.spaces.Discrete(self.world.size // 2)
 
         # when meta actions are enabled the action sampling is done in the environment
+        self.softmax_actions = 'softmax_actions' in config and config['softmax_actions']
         self.meta_actions = 'meta_actions' in config and config['meta_actions']
 
         if self.meta_actions: self.action_space = gym.spaces.Box(low=0, high=1, shape=(4,))
         else: self.action_space = gym.spaces.Discrete(4)
+
+    def softmax(self, x):
+        """
+        Applies softmax to the given input.
+        :param x: The sample to compute softmax for.
+        :return: The softmax value.
+        """
+        return np.exp(x) / np.sum(np.exp(x), axis=0)
 
     def step(self, action):
         """
@@ -79,6 +88,10 @@ class GridEnv(gym.Env):
         :return: And info object providing additional information on the current state.
         """
         if self.done: print('The environment is in a terminal state. Reset the environment before stepping')
+
+        # apply softmax to the action vector
+        if self.softmax_actions:
+            action = self.softmax(action)
 
         # sample an actual action if meta actions are enabled
         if self.meta_actions:
@@ -112,7 +125,7 @@ class GridEnv(gym.Env):
         """
         Renders the current grid environment using pyplot.
         Each iteration introduces a brief delay. Therefore this functions should be avoided for training.
-        :param model: Rendering mode for open ai compatability.
+        :param model: Rendering mode for open ai compatibility.
         """
         # if the render function is called for the first time
         # the figure is configured
