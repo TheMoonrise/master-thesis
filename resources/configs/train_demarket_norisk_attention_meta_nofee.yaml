@@ -20,7 +20,9 @@ risk-ppo:
 
         env_config:
             starting_funds: 100.0
-            fee_model: no_fee
+            fee_difficulty_scaling_factor: 0
+            test_data_usage_percentage: 0.2
+            is_validation: false
             meta_actions: true
 
         # gamma: 0.99

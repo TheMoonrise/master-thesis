@@ -42,6 +42,6 @@ risk-ppo:
         use_critic: true
         batch_mode: complete_episodes
         num_gpus: 0.49
-        num_workers: 5
+        num_workers: 1
         framework: torch
         log_level: ERROR

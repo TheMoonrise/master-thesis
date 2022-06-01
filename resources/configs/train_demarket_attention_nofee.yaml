@@ -12,7 +12,9 @@ risk-ppo:
     config:
         env_config:
             starting_funds: 100.0
-            fee_model: no_fee
+            fee_difficulty_scaling_factor: 0
+            test_data_usage_percentage: 0.2
+            is_validation: false
 
         model:
             use_attention: true
@@ -30,6 +32,7 @@ risk-ppo:
         use_critic: true
         batch_mode: complete_episodes
         num_gpus: 0.99
-        num_workers: 5
+        num_workers: 1
+
         framework: torch
         log_level: ERROR

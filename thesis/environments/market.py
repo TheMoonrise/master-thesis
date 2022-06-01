@@ -89,10 +89,6 @@ class MarketEnv(gym.Env):
 
         self.data = data
 
-        # create a dataframe to store trajectories for validation
-        self.trajectory = pd.DataFrame(columns=self.coin_labels + ['INVESTMENT', 'RETURN'], dtype=float)
-        self.trajectory_output = config['validation_output'].replace('\\', '/') if 'validation_output' in config else None
-
         # split the data into training and validation
         validation_length = 0 if 'validation_length' not in config else config['validation_length']
 
@@ -149,11 +145,6 @@ class MarketEnv(gym.Env):
         tot_return = curr_state[self.invest_index] / last_state[self.invest_index]
         log_return = math.log(tot_return) if tot_return > 0 else 0
 
-        # aggregate information in the trajectory
-        if not self.is_training:
-            row = pd.DataFrame([list(last_state) + [self.invest_index, log_return]], columns=self.trajectory.columns)
-            self.trajectory = pd.concat((self.trajectory, row), ignore_index=True)
-
         return np.concatenate((curr_state, [self.invest_index])), log_return + transaction_fee, self.done, {}
 
     def reset(self):
@@ -183,11 +174,9 @@ class MarketEnv(gym.Env):
         """
         Renders the current grid environment using pyplot.
         Each iteration introduces a brief delay. Therefore this functions should be avoided for training.
-        :param model: Rendering mode for open ai compatability.
+        :param model: Rendering mode for open ai compatibility.
         """
         pass
 
     def close(self):
-        if self.is_training or not self.trajectory_output: return
-        self.trajectory.to_csv(self.trajectory_output, index=False)
-        print('Environment trajectory saved to', self.trajectory_output)
+        pass

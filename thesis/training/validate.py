@@ -3,6 +3,7 @@ Validation of an agent.
 """
 
 import argparse
+import json
 import os
 import time
 import torch
@@ -12,16 +13,20 @@ import numpy as np
 from thesis.training.setup import Setup
 
 
-def validate(trainer, config, checkpoint, episodes):
+def validate(trainer, config, checkpoint, episodes, trajectory_path):
     """
     Validates the training results by running on the environment and outputting the results.
     :param trainer: The trainer class to validate.
     :param config: The training and validation configuration.
     :param checkpoint: The path to the checkpoint to restore the model from.
     :param episodes: The number of episodes to validate for.
+    :param trajectory_path: The path at which to store the trajectory.
     If this value is < 0 validation will continue indefinitely.
     """
     with torch.no_grad():
+        # collect trajectory information
+        trajectory = []
+
         # env = GridEnv(config['env_config'])
         env_config = config['env_config'] if 'env_config' in config else {}
         if 'is_validation' in env_config: env_config['is_validation'] = True
@@ -41,6 +46,8 @@ def validate(trainer, config, checkpoint, episodes):
         env = agent.env_creator(env_config)
         state = env.reset()
 
+        trajectory.append([list(state) + [0]])
+
         tracker = (0, 0, 0)
         episode_reward = 0
 
@@ -59,6 +66,7 @@ def validate(trainer, config, checkpoint, episodes):
             episode_reward += reward
 
             env.render()
+            trajectory[-1].append(list(state) + [reward])
             if sleep > 0: time.sleep(sleep)
 
             if done:
@@ -79,10 +87,16 @@ def validate(trainer, config, checkpoint, episodes):
                        f' Variance: {variance:<9.5f}'), end='')
 
                 env.render()
+                trajectory.append([])
                 if sleep > 0: time.sleep(sleep)
 
         print(' ')
         env.close()
+
+        # save the trajectory if a path is given
+        if trajectory_path:
+            with open(trajectory_path, 'w') as stream:
+                stream.write(json.dumps(trajectory[:-1]))
 
 
 if __name__ == '__main__':
@@ -93,6 +107,7 @@ if __name__ == '__main__':
 
     parse.add_argument('--episodes', help='The number of episodes to validate for', type=int, default=-1)
     parse.add_argument('--debug', help='When set validation is single threaded', action='store_true')
+    parse.add_argument('--trajectory', help='The path at which to store the trajectories', type=str)
 
     args = parse.parse_args()
 
@@ -112,7 +127,7 @@ if __name__ == '__main__':
 
     # validate the results
     # validate(trainer, params['config'], args.checkpoint, args.episodes)
-    validate(trainer, params['config'], args.checkpoint, args.episodes)
+    validate(trainer, params['config'], args.checkpoint, args.episodes, args.trajectory)
 
     setup.shutdown()
     print('Validation completed')
