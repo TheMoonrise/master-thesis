@@ -1,21 +1,21 @@
 risk-ppo:
     env: DecentralizedMarket
     run: PPO-RISK
-    name: DEMRK PPO ATT RAA META NOFEE
+    name: DEMRK PPO ATT RAA SMAX NOFEE
 
     samples: 1
 
     stop:
-        training_iteration: 25000
-        # training_iteration: 3
+        training_iteration: 50000
+        # training_iteration: 10000
 
     config:
         model:
             use_attention: true
-            custom_action_dist: Dirichlet
+            # custom_action_dist: Dirichlet
             custom_model_config:
                 risk_factor: 0.25
-                risk_lr: 0.0001
+                risk_lr: 0.00003
                 risk_net_layers: [16, 8]
 
         env_config:
@@ -24,20 +24,24 @@ risk-ppo:
             test_data_usage_percentage: 0.2
             is_validation: false
             meta_actions: true
+            softmax_actions: true
 
-        gamma: 0.99
+        gamma: 0.95
+        # gamma: tune.uniform(0.9, 0.999)
         lr: 0.0004
+        # lr: tune.grid_search([0.0001, 0.0004, 0.0009])
         lambda: 0.8
         kl_coeff: 0.2
         vf_loss_coeff: 1.0
-        entropy_coeff: 0.015
+        entropy_coeff: 0.05
+        # entropy_coeff: tune.uniform(0.005, 0.085)
         clip_param: 0.2
         vf_clip_param: 9
 
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 0.99
+        num_gpus: 1
         num_workers: 1
         framework: torch
         log_level: ERROR
