@@ -3,11 +3,11 @@ risk-ppo:
     run: PPO-RISK
     name: DEMRK PPO ATT NORAA SMAX NOFEE
 
-    samples: 3
+    samples: 1
 
     stop:
-        # training_iteration: 50000
-        training_iteration: 10000
+        training_iteration: 50000
+        # training_iteration: 10000
 
     config:
         model:
@@ -41,7 +41,7 @@ risk-ppo:
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 0.2
+        num_gpus: 1
         num_workers: 1
         framework: torch
         log_level: ERROR

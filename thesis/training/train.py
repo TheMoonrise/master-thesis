@@ -81,6 +81,8 @@ if __name__ == '__main__':
     name = args.name or params['name'] if 'name' in params else None
     offline = not args.wandb or args.debug
 
+    print('Training setup completed')
+    print('Beginning training...')
     training(trainer, params['config'], params['stop'], params['samples'], checkpoint_path, name, args.restore, offline)
 
     setup.shutdown()

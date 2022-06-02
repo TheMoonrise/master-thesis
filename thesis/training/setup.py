@@ -39,7 +39,9 @@ class Setup:
         Register custom models with the RlLib library.
         :param debug: Whether ray should be initialized in local mode for debugging.
         """
+        print('Beginning ray init...')
         ray.init(local_mode=debug, logging_level='error', log_to_driver=False)
+        print('Ray init completed')
 
         # register custom environments
         register_env('Gridworld', GridEnv)
