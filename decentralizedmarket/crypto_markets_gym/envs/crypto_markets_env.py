@@ -120,6 +120,9 @@ class CryptoMarketsEnv(gym.Env):
             }
             self.action_space = gym.spaces.Dict(spaces)
 
+        # NOTE modify the action space if meta actions are enabled
+        if self.meta_actions: self.action_space = gym.spaces.Box(low=0, high=1, shape=(self.amount_pairs_to_include,))
+
         observation_space_size = (
             1 + self.amount_pairs_to_include + 1 + self.current_trajectory_df.shape[1]
         )
