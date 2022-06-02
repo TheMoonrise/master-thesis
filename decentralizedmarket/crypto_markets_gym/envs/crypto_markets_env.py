@@ -455,8 +455,12 @@ class CryptoMarketsEnv(gym.Env):
     def step(self, action: Union[np.ndarray, Dict[str, np.ndarray]]) -> Tuple[np.ndarray, float, bool, dict]:
 
         # NOTE if meta actions are enabled the action is sampled here
-        if self.softmax_actions: action = np.exp(action) / np.sum(np.exp(action), axis=0)
-        if self.meta_actions: action = np.array(np.random.choice(self.amount_pairs_to_include, p=action))
+        if self.softmax_actions:
+            action = np.exp(action) / np.sum(np.exp(action), axis=0)
+
+        if self.meta_actions:
+            np.nan_to_num(action)
+            action = np.array(np.random.choice(self.amount_pairs_to_include, p=action))
 
         if self.include_gas_bid_in_action:
             idx_action_asset_to_invest = action.get("investment_decision").item()
