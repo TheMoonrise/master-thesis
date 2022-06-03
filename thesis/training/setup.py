@@ -40,7 +40,7 @@ class Setup:
         :param debug: Whether ray should be initialized in local mode for debugging.
         """
         print('Beginning ray init...')
-        ray.init(local_mode=debug, logging_level='error', log_to_driver=False)
+        ray.init(local_mode=debug, logging_level='error')
         print('Ray init completed')
 
         # register custom environments

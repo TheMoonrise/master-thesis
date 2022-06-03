@@ -12,7 +12,7 @@ risk-ppo:
         model:
             use_attention: true
             custom_model_config:
-                risk_factor: 0.25
+                risk_factor: 0.1
                 risk_lr: 0.00001
                 risk_stack_size: 80
                 risk_net_layers: [16, 8]

@@ -14,7 +14,7 @@ risk-ppo:
             use_attention: true
             custom_action_dist: Dirichlet
             custom_model_config:
-                risk_factor: 0.25
+                risk_factor: 0.1
                 risk_lr: 0.0001
                 risk_net_layers: [16, 8]
 
