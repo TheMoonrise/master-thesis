@@ -46,4 +46,4 @@ risk-ppo:
         framework: torch
         log_level: ERROR
 
-        normalize_actions: false
+        normalize_actions: true

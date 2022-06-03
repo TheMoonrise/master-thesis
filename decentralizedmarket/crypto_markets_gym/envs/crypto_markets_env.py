@@ -459,7 +459,7 @@ class CryptoMarketsEnv(gym.Env):
             action = np.exp(action) / np.sum(np.exp(action), axis=0)
 
         if self.meta_actions:
-            np.nan_to_num(action)
+            action = np.nan_to_num(action)
             action = np.array(np.random.choice(self.amount_pairs_to_include, p=action))
 
         if self.include_gas_bid_in_action:
