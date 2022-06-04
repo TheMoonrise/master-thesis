@@ -5,6 +5,7 @@ Validation of an agent.
 import argparse
 import json
 import os
+import re
 import time
 import torch
 
@@ -46,7 +47,7 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
         env = agent.env_creator(env_config)
         state = env.reset()
 
-        trajectory.append([list(state) + [0]])
+        trajectory.append([list(state) + [0] if type(state) == np.ndarray else [state, 0]])
 
         tracker = (0, 0, 0)
         episode_reward = 0
@@ -66,7 +67,7 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
             episode_reward += reward
 
             env.render()
-            trajectory[-1].append(list(state) + [reward])
+            trajectory[-1].append(list(state) + [reward] if type(state) == np.ndarray else [state, reward])
             if sleep > 0: time.sleep(sleep)
 
             if done:
