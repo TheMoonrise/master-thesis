@@ -3,11 +3,11 @@ risk-ppo:
     run: PPO-RISK
     name: DEMRK PPO ATT NORAA SMAX NOFEE
 
-    samples: 1
+    samples: 3
 
     stop:
-        training_iteration: 50000
-        # training_iteration: 10000
+        # training_iteration: 50000
+        training_iteration: 10000
 
     config:
         model:
@@ -28,7 +28,7 @@ risk-ppo:
 
         gamma: 0.95
         # gamma: tune.uniform(0.9, 0.999)
-        lr: 0.0004
+        lr: 0.0001
         # lr: tune.grid_search([0.0001, 0.0004, 0.0009])
         lambda: 0.8
         kl_coeff: 0.2
@@ -41,9 +41,9 @@ risk-ppo:
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 1
+        num_gpus: 0.2
         num_workers: 1
         framework: torch
         log_level: ERROR
 
-        normalize_actions: false
+        normalize_actions: true

@@ -35,7 +35,7 @@ risk-ppo:
         use_gae: true
         use_critic: true
         batch_mode: complete_episodes
-        num_gpus: 1
+        num_gpus: 0.2
         num_workers: 1
         framework: torch
         log_level: ERROR
