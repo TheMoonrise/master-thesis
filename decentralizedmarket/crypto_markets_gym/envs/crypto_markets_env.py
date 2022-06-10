@@ -58,6 +58,7 @@ class CryptoMarketsEnv(gym.Env):
         include_gas_bid_in_action = False
 
         self.meta_actions = False
+        self.deterministic_actions = False
         self.softmax_actions = False
 
         if 'starting_funds' in config: starting_funds = config['starting_funds']
@@ -66,6 +67,7 @@ class CryptoMarketsEnv(gym.Env):
 
         if 'softmax_actions' in config: self.softmax_actions = config['softmax_actions']
         if 'meta_actions' in config: self.meta_actions = config['meta_actions']
+        if 'deterministic_actions' in config: self.deterministic_actions = config['deterministic_actions']
 
         if 'is_validation' in config: self.set_test_data_mode(config['is_validation'])
 
@@ -458,9 +460,12 @@ class CryptoMarketsEnv(gym.Env):
         if self.softmax_actions:
             action = np.exp(action) / np.sum(np.exp(action), axis=0)
 
-        if self.meta_actions:
+        if self.meta_actions and not self.deterministic_actions:
             action = np.nan_to_num(action)
             action = np.array(np.random.choice(self.amount_pairs_to_include, p=action))
+
+        if self.meta_actions and self.deterministic_actions:
+            action = np.argmax(action)
 
         if self.include_gas_bid_in_action:
             idx_action_asset_to_invest = action.get("investment_decision").item()

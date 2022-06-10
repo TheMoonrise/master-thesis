@@ -115,8 +115,9 @@ class Setup:
                     if k not in dict_to: dict_to[k] = {}
                     update_dict(v, dict_to[k])
 
-                if isinstance(v, numbers.Number) or isinstance(v, list):
-                    dict_to[k] = v
+                if 'gpu' in k: continue
+                if not isinstance(v, numbers.Number) and not isinstance(v, list): continue
+                dict_to[k] = v
 
         update_dict(config, params['config'])
 
