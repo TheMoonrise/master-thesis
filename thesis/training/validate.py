@@ -50,6 +50,7 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
         trajectory.append([list(state) + [0] if type(state) == np.ndarray else [state, 0]])
 
         tracker = (0, 0, 0)
+        tracker_a = (0, 0, 0)  # tracking per action
         episode_reward = 0
 
         while episodes != 0:
@@ -66,6 +67,8 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
             state, reward, done, _ = env.step(action)
             episode_reward += reward
 
+            tracker_a = (tracker_a[0] + 1, tracker_a[1] + reward, tracker_a[2] + reward ** 2)
+
             env.render()
             trajectory[-1].append(list(state) + [reward] if type(state) == np.ndarray else [state, reward])
             if sleep > 0: time.sleep(sleep)
@@ -80,12 +83,17 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
                 episode_reward = 0
 
                 avg_reward = tracker[1] / tracker[0]
+                avg_reward_a = tracker_a[1] / tracker_a[0]
+
                 variance = tracker[2] / tracker[0] - avg_reward ** 2
+                variance_a = tracker_a[2] / tracker_a[0] - avg_reward_a ** 2
 
                 print((f'\rEpisode: {tracker[0]:0>3}'
                        f' Total Reward: {tracker[1]:<9.2f}'
                        f' Avg Reward: {avg_reward:<9.3f}'
-                       f' Variance: {variance:<9.5f}'), end='')
+                       f' Avg Reward [A]: {avg_reward_a:<9.3f}'
+                       f' Variance: {variance:<9.5f}'
+                       f' Variance [A]: {variance_a:<9.5f}'), end='')
 
                 env.render()
                 trajectory.append([])
