@@ -69,8 +69,6 @@ class CryptoMarketsEnv(gym.Env):
         if 'meta_actions' in config: self.meta_actions = config['meta_actions']
         if 'deterministic_actions' in config: self.deterministic_actions = config['deterministic_actions']
 
-        if 'is_validation' in config: self.set_test_data_mode(config['is_validation'])
-
         print(f"STARTING FUNDS {starting_funds}")
 
         self.amount_pairs_to_include = 10 + 1
@@ -91,6 +89,7 @@ class CryptoMarketsEnv(gym.Env):
         # Optional, allows for utilization of a testing dataset, if set true the environment only samples
         # from the test data set, identified by index
         self.is_test_data_mode = False
+        if 'is_validation' in config: self.set_test_data_mode(config['is_validation'])
 
         #
         self.is_bankrupt = False

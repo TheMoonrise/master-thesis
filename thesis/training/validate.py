@@ -14,7 +14,7 @@ import numpy as np
 from thesis.training.setup import Setup
 
 
-def validate(trainer, config, checkpoint, episodes, trajectory_path):
+def validate(trainer, config, checkpoint, episodes, trajectory_path, no_validation=False):
     """
     Validates the training results by running on the environment and outputting the results.
     :param trainer: The trainer class to validate.
@@ -23,6 +23,7 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
     :param episodes: The number of episodes to validate for.
     :param trajectory_path: The path at which to store the trajectory.
     If this value is < 0 validation will continue indefinitely.
+    :param no_validation: Whether to use the training data set.
     """
     with torch.no_grad():
         # collect trajectory information
@@ -30,7 +31,7 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
 
         # env = GridEnv(config['env_config'])
         env_config = config['env_config'] if 'env_config' in config else {}
-        if 'is_validation' in env_config: env_config['is_validation'] = True
+        if 'is_validation' in env_config: env_config['is_validation'] = not no_validation
 
         sleep = env_config['timeout'] if 'timeout' in env_config else 0
 
@@ -90,10 +91,10 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path):
 
                 print((f'\rEpisode: {tracker[0]:0>3}'
                        f' Total Reward: {tracker[1]:<9.2f}'
-                       f' Avg Reward: {avg_reward:<9.3f}'
-                       f' Avg Reward [A]: {avg_reward_a:<9.3f}'
-                       f' Variance: {variance:<9.5f}'
-                       f' Variance [A]: {variance_a:<9.5f}'), end='')
+                       f' Avg Reward: {avg_reward:<9.7f}'
+                       f' Avg Reward [A]: {avg_reward_a:<9.7f}'
+                       f' Var: {variance:<9.7f}'
+                       f' Var [A]: {variance_a:<9.7f}'), end='')
 
                 env.render()
                 trajectory.append([])
@@ -117,6 +118,7 @@ if __name__ == '__main__':
     parse.add_argument('--episodes', help='The number of episodes to validate for', type=int, default=-1)
     parse.add_argument('--debug', help='When set validation is single threaded', action='store_true')
     parse.add_argument('--trajectory', help='The path at which to store the trajectories', type=str)
+    parse.add_argument('--no-validation', help='When set the training data is used', action='store_true')
 
     args = parse.parse_args()
 
@@ -136,7 +138,7 @@ if __name__ == '__main__':
 
     # validate the results
     # validate(trainer, params['config'], args.checkpoint, args.episodes)
-    validate(trainer, params['config'], args.checkpoint, args.episodes, args.trajectory)
+    validate(trainer, params['config'], args.checkpoint, args.episodes, args.trajectory, args.no_validation)
 
     setup.shutdown()
     print('Validation completed')
