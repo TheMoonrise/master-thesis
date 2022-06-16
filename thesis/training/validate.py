@@ -5,7 +5,7 @@ Validation of an agent.
 import argparse
 import json
 import os
-import re
+import random
 import time
 import torch
 
@@ -25,9 +25,14 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path, no_validati
     If this value is < 0 validation will continue indefinitely.
     :param no_validation: Whether to use the training data set.
     """
+    seed = 1214
+    np.random.seed(seed)
+    random.seed(seed)
+
     with torch.no_grad():
         # collect trajectory information
         trajectory = []
+        trajectory_episodes = []
 
         # env = GridEnv(config['env_config'])
         env_config = config['env_config'] if 'env_config' in config else {}
@@ -81,6 +86,7 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path, no_validati
 
                 # update and print the current average performance
                 tracker = (tracker[0] + 1, tracker[1] + episode_reward, tracker[2] + episode_reward ** 2)
+                trajectory_episodes.append(episode_reward)
                 episode_reward = 0
 
                 avg_reward = tracker[1] / tracker[0]
@@ -107,6 +113,13 @@ def validate(trainer, config, checkpoint, episodes, trajectory_path, no_validati
         if trajectory_path:
             with open(trajectory_path, 'w') as stream:
                 stream.write(json.dumps(trajectory[:-1]))
+
+            if '.' not in trajectory_path: trajectory_path += '.json'
+            index = trajectory_path.rindex('.')
+            trajectory_path = trajectory_path[:index] + '_episodes' + trajectory_path[index:]
+
+            with open(trajectory_path, 'w') as stream:
+                stream.write(json.dumps(trajectory_episodes))
 
 
 if __name__ == '__main__':

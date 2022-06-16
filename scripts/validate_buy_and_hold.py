@@ -2,13 +2,15 @@
 Runs the given number of episode with baseline policies.
 """
 import argparse
+import os
 import random
+import json
 import numpy as np
 
 from crypto_markets_gym.envs.crypto_markets_env import CryptoMarketsEnv
 
 
-def validate(episodes, action=0, random_action=False, no_validation=False):
+def validate(episodes, action=0, random_action=False, no_validation=False, out=None):
 
     seed = 1214
     np.random.seed(seed)
@@ -27,6 +29,7 @@ def validate(episodes, action=0, random_action=False, no_validation=False):
     tracker_a = (0, 0, 0)
 
     episode_reward = 0
+    episode_list = []
 
     while episodes != 0:
 
@@ -42,6 +45,8 @@ def validate(episodes, action=0, random_action=False, no_validation=False):
 
             # update and print the current average performance
             tracker = (tracker[0] + 1, tracker[1] + episode_reward, tracker[2] + episode_reward ** 2)
+
+            episode_list.append(episode_reward)
             episode_reward = 0
 
             avg_reward = tracker[1] / tracker[0]
@@ -59,6 +64,14 @@ def validate(episodes, action=0, random_action=False, no_validation=False):
 
             env.render()
 
+    if out:
+        file_name = 'bhs'
+        file_name += '_noval' if no_validation else '_val'
+        file_name += '_rand' if random_action else '_' + str(action)
+
+        with open(os.path.join(out, file_name + '.json'), 'w') as stream:
+            stream.write(json.dumps(episode_list))
+
     print(' ')
     env.close()
 
@@ -67,6 +80,7 @@ if __name__ == '__main__':
     parse = argparse.ArgumentParser()
 
     parse.add_argument('--episodes', help='The number of episodes to validate for', type=int, default=-1)
+    parse.add_argument('--output-dir', help='Path to store results at', type=str)
     parse.add_argument('--actions', help='The comma separated list of actions to validate', type=str, default="0")
     parse.add_argument('--random', help='When set random actions are used', action='store_true')
     parse.add_argument('--no-validation', help='When set the training data is used', action='store_true')
@@ -77,8 +91,9 @@ if __name__ == '__main__':
         try:
             action = int(a)
             print('\na =', action)
-            validate(args.episodes, action, args.random, args.no_validation)
-        except:
+            validate(args.episodes, action, args.random, args.no_validation, args.output_dir)
+        except Exception as e:
             print('Illegal action:', a)
+            print(e)
 
     print('Validation completed')
