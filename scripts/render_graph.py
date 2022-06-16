@@ -22,10 +22,6 @@ def source_data(args):
     """
     data = {}
 
-    # if a file is given directly load it
-    if os.path.isfile(args.source):
-        with open(args.source) as stream: return json.loads(stream.read())
-
     # iterate all files in the given directory
     for file in os.listdir(args.source):
         if not file.endswith('.json'): continue
@@ -184,55 +180,60 @@ def plot_decisions(args, data, figure, axes: plt.Axes, plot_err=True):
     :param figure: The figure to plot onto.
     :param axes: The axes to use for the plot.
     """
-    if type(data) != list: raise('Source path must point to a json list')
     if not args.episode: raise('Episode must be specified')
 
-    episode = np.array(data[args.episode])
+    # pick the episode from any of the provided runs
+    # all runs must have the same seed for the plot to make sense
+    episode = np.array(data[list(data.keys())[0]][args.episode])
+    x = np.arange(episode.shape[0])
 
     # close to close value every 7 indices starting at 19
     c2c = episode[:, 19:: 7]
 
-    # c2c only hods change in value?; sum over episode
+    # c2c only hods change in value? sum over episode
     for i in range(1, c2c.shape[0]): c2c[i] += c2c[i - 1]
 
-    # labels = ['WETH', 'USDC', 'WBTC', 'UNI', 'MATIC', 'LINK', 'SHIB', 'RPL', 'MKR', 'HEX', 'COMP']
-    x = np.arange(c2c.shape[0])
-
+    # plot the coin price changes
     for i in range(c2c.shape[1]):
         xs, ys = smooth_line(c2c[:, i], x, 4)
         axes.plot(xs, ys, color='#a79f9a', lw=1)
 
-    # current allocation is one hot encoded at index 2 to 13
-    asset = np.argmax(episode[:, 2: 13], axis=1)
+    # plot purchasing behavior for all included runs
+    for k, episodes in data.items():
+        episode = np.array(episodes[args.episode])
 
-    # pick the values from the current asset
-    values = np.zeros_like(asset, dtype=np.float64)
-    for i in range(len(asset)): values[i] = c2c[i, asset[i]]
+        # current allocation is one hot encoded at index 2 to 13
+        asset = np.argmax(episode[:, 2: 13], axis=1)
 
-    name = os.path.basename(args.source).replace('.json', '').replace('_', ' ').upper()
-    p_color = color(name)
-    tracker = (asset[0], 0)
+        # pick the values from the current asset
+        values = np.zeros_like(asset, dtype=np.float64)
+        for i in range(len(asset)): values[i] = c2c[i, asset[i]]
 
-    # plot a line for holding and dots for brief purchases
-    for i in range(1, len(asset)):
-        if asset[i] == tracker[0]: continue
+        tracker = (asset[0], 0)
 
-        if i - tracker[1] == 1: axes.scatter(x[i - 1], values[i - 1], color=p_color, alpha=1, zorder=3)
+        # plot a line for holding and dots for brief purchases
+        for i in range(1, len(asset)):
+            if asset[i] == tracker[0]: continue
 
-        else:
-            xs, ys = x[tracker[1]:i], values[tracker[1]:i]
-            if i - tracker[1] > 3: xs, ys = smooth_line(values[tracker[1]:i], x[tracker[1]:i], 4)
-            axes.plot(xs, ys, color=p_color, zorder=3)
+            if i - tracker[1] == 1:
+                axes.scatter(x[i - 1], values[i - 1], s=9, color=color(k), alpha=1, zorder=4)
 
-        tracker = (asset[i], i)
+            else:
+                xs, ys = x[tracker[1]:i], values[tracker[1]:i]
+                if i - tracker[1] > 3: xs, ys = smooth_line(values[tracker[1]:i], x[tracker[1]:i], 4)
+                axes.plot(xs, ys, color=color(k), zorder=3)
+
+            tracker = (asset[i], i)
 
     axes.set_ylabel('Price Change (ETH)')
     axes.set_xlabel('Step')
     axes.spines['bottom'].set_visible(True)
     axes.grid(color='#a79f9a', axis='y')
 
-    custom_lines = [Line2D([0], [0], color='#a79f9a', lw=4), Line2D([0], [0], color=p_color, lw=4)]
-    style_legend(axes.legend(custom_lines, ['Coins', name]))
+    # define a legend with custom lines
+    lines = [Line2D([0], [0], color='#a79f9a', lw=4)] + [Line2D([0], [0], color=color(k), lw=4) for k in data.keys()]
+    labels = ['Coins'] + [k for k in data.keys()]
+    style_legend(axes.legend(lines, labels))
 
 
 if __name__ == '__main__':
