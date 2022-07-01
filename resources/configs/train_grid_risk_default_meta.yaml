@@ -6,7 +6,7 @@ risk-ppo:
     samples: 1
 
     stop:
-        training_iteration: 100
+        training_iteration: 75
 
     config:
         model:
@@ -14,7 +14,7 @@ risk-ppo:
             custom_model_config:
                 # risk_factor: 8
                 # with risk = 0.25 only the safe route is taken
-                risk_factor: tune.grid_search([0.25, 0.5, 0.75, 1, 2])
+                risk_factor: tune.grid_search([0.15, 0.2, 0.25])
                 risk_lr: 0.00005
                 risk_net_layers: [32]
 
@@ -27,7 +27,7 @@ risk-ppo:
 
         use_gae: true
         use_critic: true
-        num_workers: 1
+        num_workers: 0
         num_gpus: 0.1
         framework: torch
         log_level: ERROR

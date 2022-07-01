@@ -6,17 +6,18 @@ risk-ppo:
     samples: 1
 
     stop:
-        training_iteration: 40
+        training_iteration: 75
 
     config:
         model:
             custom_model_config:
-                risk_factor: 1
+                # risk_factor: 0.15
+                risk_factor: tune.grid_search([0.15, 0.15, 0.15])
                 risk_lr: 0.00005
                 risk_net_layers: [32]
 
         env_config:
-            grid_path: .\resources\grids\grid_mean_test.json
+            grid_path: .\resources\grids\grid_alternating.json
             root: null
             timeout: 0.1
             meta_actions: false
@@ -25,6 +26,6 @@ risk-ppo:
         use_gae: true
         use_critic: true
         num_workers: 0
-        num_gpus: 0.9
+        num_gpus: 0.2
         framework: torch
         log_level: ERROR

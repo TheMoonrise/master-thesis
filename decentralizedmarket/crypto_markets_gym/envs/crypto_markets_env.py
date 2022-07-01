@@ -59,6 +59,7 @@ class CryptoMarketsEnv(gym.Env):
 
         self.meta_actions = False
         self.deterministic_actions = False
+        self.deterministic_penalty = False
         self.softmax_actions = False
 
         if 'starting_funds' in config: starting_funds = config['starting_funds']
@@ -68,6 +69,7 @@ class CryptoMarketsEnv(gym.Env):
         if 'softmax_actions' in config: self.softmax_actions = config['softmax_actions']
         if 'meta_actions' in config: self.meta_actions = config['meta_actions']
         if 'deterministic_actions' in config: self.deterministic_actions = config['deterministic_actions']
+        if 'deterministic_penalty' in config: self.deterministic_penalty = config['deterministic_penalty']
 
         print(f"STARTING FUNDS {starting_funds}")
 
@@ -464,6 +466,7 @@ class CryptoMarketsEnv(gym.Env):
             action = np.array(np.random.choice(self.amount_pairs_to_include, p=action))
 
         if self.meta_actions and self.deterministic_actions:
+            penalty = np.max(action)
             action = np.argmax(action)
 
         if self.include_gas_bid_in_action:
@@ -583,6 +586,10 @@ class CryptoMarketsEnv(gym.Env):
 
         if self.include_gas_bid_in_action:
             info_dict["agent_gas_price_bid"] = agent_gas_price_bid
+
+        # apply the penalty for low confidence deterministic actions
+        if self.meta_actions and self.deterministic_actions and self.deterministic_penalty:
+            ln_reward *= penalty
 
         return observation_, ln_reward, done, info_dict
 
