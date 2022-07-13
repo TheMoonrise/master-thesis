@@ -12,29 +12,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def source_data(args):
+def source_data(args, property=None):
     """
     Reads all .json files from the source directory.
     If a property is given this property is taken from dicts.
     If no property is given the json must be a list.
     :param args: The command line arguments.
+    :param property: The property to collect the data for.
     :return: The data dictionary.
     """
     data = {}
+    ignore = (args.ignore or '').split(',')
 
     # iterate all files in the given directory
     for file in os.listdir(args.source):
         if not file.endswith('.json'): continue
+        if file.replace('.json', '') in ignore: continue
         name = file.replace('.json', '').replace('_', ' ').upper()
 
         with open(os.path.join(args.source, file)) as stream:
             source = json.loads(stream.read())
 
-        if args.property and args.property in source:
-            data[name] = source[args.property]
+        if property and property in source:
+            data[name] = source[property]
 
-        if not args.property and type(source) == list:
+        if not property and type(source) == list:
             data[name] = source
+
+    data = {k: v[args.trim:] for k, v in data.items()}
 
     if args.length:
         data = {k: v[:args.length] for k, v in data.items()}
@@ -48,13 +53,14 @@ def color(key: str):
     :param key: The key.
     :return: The color as hex string.
     """
+    if 'discrete' in key.lower(): return '#64813a'
     if 'meta' in key.lower(): return '#24a19c'
     if 'raa' in key.lower(): return '#d96098'
     if 'ras' in key.lower(): return '#d99061'
     if 'rnb' in key.lower(): return '#315288'
 
-    if 'rng' in key.lower(): return '#5c3288'
-    if 'bah' in key.lower(): return '#64813a'
+    if 'rng' in key.lower(): return '#5c3388'
+    if 'bah' in key.lower(): return '#c4573e'
 
     return '#000000'
 
@@ -116,24 +122,28 @@ def smooth_line(data, x, multiplier=10, k=3):
     return x_smooth, interps(x_smooth)
 
 
-def plot_mean_error(args, data, figure, axes: plt.Axes, plot_err=True):
+def plot_mean_error(args, data, figure, axes: plt.Axes, line='-', plot_err=True, plot_legend=True):
     """
     Plots a mean error graph.
     :param args: The command line arguments.
     :param data: The data to plot the graph for.
     :param figure: The figure to plot onto.
     :param axes: The axes to use for the plot.
+    :param line: The line rendering style.
+    :param plot_err: Whether to plot the error 
+    :param plot_legend: Whether to plot a legend.
     """
     for k, v in data.items():
         smooth, err = smooth_data(v)
         x = np.arange(len(smooth))
 
-        axes.plot(x, smooth, color=color(k), label=k)
+        label = k if plot_legend else None
+        axes.plot(x, smooth, color=color(k), label=label, ls=line)
 
         if not plot_err: continue
         axes.fill_between(x, smooth - err, smooth + err, alpha=0.2, color=color(k))
 
-    axes.set_ylabel('Log Returns')
+    axes.set_ylabel(args.ylabel or 'Economic Returns (Log Returns)')
     axes.set_xlabel('Training Iterations')
     axes.spines['bottom'].set_visible(True)
     axes.grid(color='#a79f9a', axis='y')
@@ -167,7 +177,7 @@ def plot_violin(args, data, figure, axes: plt.Axes):
 
     axes.set_xticks(np.arange(1, len(keys) + 1))
     axes.set_xticklabels(labels=keys)
-    axes.set_ylabel('Log Returns')
+    axes.set_ylabel(args.ylabel or 'Economic Returns (Log Returns)')
     axes.grid(color='#a79f9a', axis='y')
     axes.tick_params(axis='x', which='both', bottom=False, top=False)
 
@@ -242,15 +252,20 @@ if __name__ == '__main__':
     parse.add_argument('type', type=str)
     parse.add_argument('source', type=str)
     parse.add_argument('--property', type=str)
+    parse.add_argument('--overlay', type=str)
     parse.add_argument('--length', type=int)
     parse.add_argument('--title', type=str)
+    parse.add_argument('--ylabel', type=str)
     parse.add_argument('--out', type=str)
     parse.add_argument('--episode', type=int)
+    parse.add_argument('--ignore', type=str)
+    parse.add_argument('--log', action='store_true')
+    parse.add_argument('--trim', type=int, default=0)
 
     args = parse.parse_args()
 
     # read the data from the source folder
-    data = source_data(args)
+    data = source_data(args, args.property)
 
     # prepare the figure and axes
     # install the font on the system
@@ -260,6 +275,7 @@ if __name__ == '__main__':
     plt.rcParams['lines.linewidth'] = 2
 
     fig, ax = plt.subplots(figsize=(10, 6))
+    if args.log: ax.set_yscale('log')
 
     # ax.set_title(args.title or 'Mock Graph', fontsize='16')
 
@@ -272,10 +288,12 @@ if __name__ == '__main__':
     if args.type == 'mean-error':
         print('Plotting mean error')
         plot_mean_error(args, data, fig, ax)
+        if (args.overlay): plot_mean_error(args, source_data(args, args.overlay), fig, ax, '--', True, False)
 
     if args.type == 'mean':
         print('Plotting mean')
-        plot_mean_error(args, data, fig, ax, False)
+        plot_mean_error(args, data, fig, ax, plot_err=False)
+        if (args.overlay): plot_mean_error(args, source_data(args, args.overlay), fig, ax, '--', False, False)
 
     if args.type == 'violin':
         print('Plotting violin plot')
