@@ -182,7 +182,7 @@ def plot_violin(args, data, figure, axes: plt.Axes):
     axes.tick_params(axis='x', which='both', bottom=False, top=False)
 
 
-def plot_decisions(args, data, figure, axes: plt.Axes, plot_err=True):
+def plot_decisions(args, data, figure, axes: plt.Axes, episode_id):
     """
     Plots a graph showing trading decisions of the agent.
     :param args: The command line arguments.
@@ -190,15 +190,15 @@ def plot_decisions(args, data, figure, axes: plt.Axes, plot_err=True):
     :param figure: The figure to plot onto.
     :param axes: The axes to use for the plot.
     """
-    if not args.episode: raise('Episode must be specified')
 
     # pick the episode from any of the provided runs
     # all runs must have the same seed for the plot to make sense
-    episode = np.array(data[list(data.keys())[0]][args.episode])
+    episode = np.array(data[list(data.keys())[0]][episode_id])
     x = np.arange(episode.shape[0])
 
     # close to close value every 7 indices starting at 19
-    c2c = episode[:, 19:: 7]
+    # c2c = episode[:, 19:: 7]
+    c2c = episode[:, 1:-1]
 
     # c2c only hods change in value? sum over episode
     for i in range(1, c2c.shape[0]): c2c[i] += c2c[i - 1]
@@ -210,23 +210,24 @@ def plot_decisions(args, data, figure, axes: plt.Axes, plot_err=True):
 
     # plot purchasing behavior for all included runs
     for k, episodes in data.items():
-        episode = np.array(episodes[args.episode])
+        episode = np.array(episodes[episode_id])
 
         # current allocation is one hot encoded at index 2 to 13
-        asset = np.argmax(episode[:, 2: 13], axis=1)
+        # asset = np.argmax(episode[:, 2: 13], axis=1)
+        asset = episode[:, 0]
 
         # pick the values from the current asset
         values = np.zeros_like(asset, dtype=np.float64)
-        for i in range(len(asset)): values[i] = c2c[i, asset[i]]
+        for i in range(len(asset)): values[i] = c2c[i, int(asset[i])]
 
         tracker = (asset[0], 0)
 
         # plot a line for holding and dots for brief purchases
         for i in range(1, len(asset)):
-            if asset[i] == tracker[0]: continue
+            if asset[i] == tracker[0] and i < len(asset) - 1: continue
 
             if i - tracker[1] == 1:
-                axes.scatter(x[i - 1], values[i - 1], s=9, color=color(k), alpha=1, zorder=4)
+                axes.scatter(x[i - 1], values[i - 1], s=7, color=color(k), alpha=1, zorder=4)
 
             else:
                 xs, ys = x[tracker[1]:i], values[tracker[1]:i]
@@ -246,6 +247,27 @@ def plot_decisions(args, data, figure, axes: plt.Axes, plot_err=True):
     style_legend(axes.legend(lines, labels))
 
 
+def setup_figure(args):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    if args.log: ax.set_yscale('log')
+
+    # ax.set_title(args.title or 'Mock Graph', fontsize='16')
+
+    for v in ax.spines.values(): v.set_visible(False)  # remove the bounding box
+    for v in ax.spines.values(): v.set_color('#a79f9a')
+
+    ax.tick_params(axis='both', color='#a79f9a', labelcolor='#484442')
+    # ax.xaxis.label.set_color('#a79f9a')
+    return fig, ax
+
+
+def save_file(args, counter=-1):
+    if args.out:
+        path = args.out
+        if counter >= 0: path += '_' + str(counter)
+        plt.savefig(path, bbox_inches='tight')
+
+
 if __name__ == '__main__':
     parse = argparse.ArgumentParser()
 
@@ -257,7 +279,7 @@ if __name__ == '__main__':
     parse.add_argument('--title', type=str)
     parse.add_argument('--ylabel', type=str)
     parse.add_argument('--out', type=str)
-    parse.add_argument('--episode', type=int)
+    parse.add_argument('--episode', type=str)
     parse.add_argument('--ignore', type=str)
     parse.add_argument('--log', action='store_true')
     parse.add_argument('--trim', type=int, default=0)
@@ -274,37 +296,41 @@ if __name__ == '__main__':
     plt.rcParams['font.size'] = 12
     plt.rcParams['lines.linewidth'] = 2
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    if args.log: ax.set_yscale('log')
-
-    # ax.set_title(args.title or 'Mock Graph', fontsize='16')
-
-    for v in ax.spines.values(): v.set_visible(False)  # remove the bounding box
-    for v in ax.spines.values(): v.set_color('#a79f9a')
-
-    ax.tick_params(axis='both', color='#a79f9a', labelcolor='#484442')
-    # ax.xaxis.label.set_color('#a79f9a')
+    fig, ax = setup_figure(args)
 
     if args.type == 'mean-error':
         print('Plotting mean error')
         plot_mean_error(args, data, fig, ax)
         if (args.overlay): plot_mean_error(args, source_data(args, args.overlay), fig, ax, '--', True, False)
+        save_file(args)
+        plt.show()
 
     if args.type == 'mean':
         print('Plotting mean')
         plot_mean_error(args, data, fig, ax, plot_err=False)
         if (args.overlay): plot_mean_error(args, source_data(args, args.overlay), fig, ax, '--', False, False)
+        save_file(args)
+        plt.show()
 
     if args.type == 'violin':
         print('Plotting violin plot')
         plot_violin(args, data, fig, ax)
+        save_file(args)
+        plt.show()
 
     if args.type == 'decisions':
-        print('Plotting decisions')
-        plot_decisions(args, data, fig, ax)
 
-    if args.out:
-        plt.savefig(args.out, bbox_inches='tight')
+        if '-' not in args.episode:
+            print('Plotting decisions, episode', args.episode)
+            plot_decisions(args, data, fig, ax, int(args.episode))
+            save_file(args)
+            plt.show()
 
-    # show the final plot
-    plt.show()
+        else:
+            fromto = [int(x) for x in args.episode.split('-')]
+            for e in range(fromto[0], fromto[1]):
+                print('Plotting decisions, episode', e)
+                plt.close()
+                fig, ax = setup_figure(args)
+                plot_decisions(args, data, fig, ax, e)
+                save_file(args, e)
